@@ -20,5 +20,4 @@ oauth-client*.json
 graphify-out/
 
 # Dokumen internal (peraturan penghuni) — jangan ikut repo publik
-private/
-public/
+
