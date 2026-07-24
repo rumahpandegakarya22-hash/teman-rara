@@ -1,0 +1,149 @@
+@import "tailwindcss";
+
+/* Token semantik Teman Rara v1.0 — komponen tidak pernah memakai hex mentah. */
+@theme {
+  --color-sand-50: #fbfaf7;
+  --color-sand-100: #f8f6f2;
+  --color-sand-200: #e8dfd5;
+  --color-sand-300: #d8ccbe;
+  --color-sand-400: #b9ae9f;
+  --color-sand-500: #8e8b87;
+  --color-sand-600: #6e6a66;
+  --color-sand-700: #524e4c;
+  --color-sand-800: #3a3635;
+  --color-sand-900: #262322;
+
+  --color-rose-100: #f2d5cf;
+  --color-rose-300: #e0a79e;
+  --color-rose-500: #cf7b72;
+  --color-rose-700: #a85248;
+
+  --color-red-100: #f6d5d6;
+  --color-red-300: #e08387;
+  --color-red-400d: #e67b7e;
+  --color-red-500: #c92d31;
+  --color-red-600: #b02529;
+  --color-red-700: #8e1e21;
+
+  /* Alias semantik → dipetakan ke CSS var runtime agar ikut light/dark. */
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-sunken: var(--sunken);
+  --color-fg: var(--fg);
+  --color-fg-secondary: var(--fg-secondary);
+  --color-fg-disabled: var(--fg-disabled);
+  --color-fg-inverse: var(--fg-inverse);
+  --color-action: var(--action);
+  --color-action-pressed: var(--action-pressed);
+  --color-on-action: var(--on-action);
+  --color-line: var(--line);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  --font-display: var(--font-lora), Georgia, serif;
+  --font-body: var(--font-poppins), system-ui, sans-serif;
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-decelerate: cubic-bezier(0, 0, 0, 1);
+}
+
+:root {
+  --surface: #f8f6f2;
+  --raised: #fbfaf7;
+  --sunken: #e8dfd5;
+  --scrim: rgb(58 54 53 / 0.45);
+  --fg: #3a3635;
+  --fg-secondary: #6e6a66;
+  --fg-disabled: #b9ae9f;
+  --fg-inverse: #fbfaf7;
+  --action: #c92d31;
+  --action-pressed: #b02529;
+  --on-action: #f8f6f2;
+  --line: #d8ccbe;
+  --success: #2e5a2e;
+  --warning: #9a6a1e;
+  --danger: #b02529;
+  --info: #6e6a66;
+  --elev-1: 0 1px 3px rgb(58 54 53 / 0.1);
+  --elev-2: 0 3px 8px -2px rgb(58 54 53 / 0.14);
+  --elev-3: 0 8px 20px -6px rgb(58 54 53 / 0.22);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #201d1c;
+    --raised: #2a2726;
+    --sunken: #171514;
+    --scrim: rgb(0 0 0 / 0.6);
+    --fg: #f8f6f2;
+    --fg-secondary: #b9ae9f;
+    --fg-disabled: #5a5654;
+    --fg-inverse: #3a3635;
+    --action: #e67b7e;
+    --action-pressed: #d5686b;
+    --on-action: #201d1c;
+    --line: #3a3635;
+    --success: #8cc08c;
+    --warning: #e5c48a;
+    --danger: #e08387;
+    --info: #b9ae9f;
+    /* Dark memakai surface-tint, bukan bayangan. */
+    --elev-1: none;
+    --elev-2: none;
+    --elev-3: none;
+    color-scheme: dark;
+  }
+}
+
+html {
+  background: var(--surface);
+}
+
+body {
+  background: var(--surface);
+  color: var(--fg);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+/* Tipografi: Lora dibatasi ≥ h3, body/UI selalu Poppins. */
+.t-display { font-family: var(--font-display); font-size: 2.4375rem; line-height: 2.75rem; font-weight: 700; letter-spacing: -0.01em; }
+.t-h1 { font-family: var(--font-display); font-size: 1.9375rem; line-height: 2.375rem; font-weight: 700; letter-spacing: -0.01em; }
+.t-h2 { font-family: var(--font-display); font-size: 1.5625rem; line-height: 2rem; font-weight: 600; }
+.t-h3 { font-family: var(--font-display); font-size: 1.25rem; line-height: 1.75rem; font-weight: 600; }
+.t-body-lg { font-size: 1.125rem; line-height: 1.75rem; }
+.t-body { font-size: 1rem; line-height: 1.5rem; }
+.t-body-sm { font-size: 0.875rem; line-height: 1.25rem; }
+.t-label { font-size: 0.8125rem; line-height: 1.125rem; font-weight: 600; letter-spacing: 0.01em; }
+.t-caption { font-size: 0.75rem; line-height: 1rem; letter-spacing: 0.01em; }
+.t-overline { font-size: 0.6875rem; line-height: 1rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
+
+.elev-1 { box-shadow: var(--elev-1); }
+.elev-2 { box-shadow: var(--elev-2); }
+.elev-3 { box-shadow: var(--elev-3); }
+
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-top { padding-top: env(safe-area-inset-top); }
+
+:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

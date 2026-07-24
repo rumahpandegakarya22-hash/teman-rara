@@ -1,0 +1,24 @@
+node_modules
+.next
+out
+.env
+.env*.local
+local.db
+local.db-*
+*.tsbuildinfo
+next-env.d.ts
+
+# clerk configuration (can include secrets)
+/.clerk/
+.env.replika
+/.claude/
+
+# Kredensial OAuth Google — JANGAN di-commit
+oauth-client*.json
+
+# Output graphify (bisa dibangun ulang)
+graphify-out/
+
+# Dokumen internal (peraturan penghuni) — jangan ikut repo publik
+private/
+public/
