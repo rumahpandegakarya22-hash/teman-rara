@@ -1,12 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/pengingat-jatuh-tempo",
+      "path": "/api/cron/harian",
       "schedule": "0 1 * * *"
-    },
-    {
-      "path": "/api/cron/sinkron-pengaduan",
-      "schedule": "*/15 * * * *"
     }
   ]
 }
