@@ -26,6 +26,21 @@ export type SesiPenghuni =
  * baris active_tenant) maupun data kamar yang tidak lagi lengkap.
  */
 export async function getSesiPenghuni(): Promise<SesiPenghuni> {
+  // Bypass login KHUSUS dev lokal — butuh DUA syarat sekaligus, dan `NODE_ENV`
+  // di Vercel selalu 'production' sehingga variabel yang tak sengaja terbawa ke
+  // sana tetap mati. Akun yang dipakai diambil dari tr_account sungguhan supaya
+  // yang tampil data asli, bukan penghuni karangan.
+  if (process.env.NODE_ENV !== "production" && process.env.DEV_BYPASS_AUTH === "1") {
+    const [akunDev] = await db
+      .select({ id_penghuni: trAccount.id_penghuni })
+      .from(trAccount)
+      .where(isNull(trAccount.revoked_at))
+      .limit(1);
+    if (!akunDev) return { status: "belum_klaim", penghuni: null };
+    const p = await cariPenghuni(akunDev.id_penghuni);
+    return p ? { status: "aktif", penghuni: p } : { status: "berakhir", penghuni: null };
+  }
+
   const { userId } = await auth();
   if (!userId) return { status: "tamu", penghuni: null };
 
@@ -153,6 +168,8 @@ export function getRiwayatBukti(idPenghuni: string, limit = 10) {
       file_url: trPaymentProof.file_url,
       created_at: trPaymentProof.created_at,
       verified_at: trPaymentProof.verified_at,
+      rejected_at: trPaymentProof.rejected_at,
+      rejected_reason: trPaymentProof.rejected_reason,
       catatan: trPaymentProof.catatan,
     })
     .from(trPaymentProof)

@@ -1,0 +1,17 @@
+name = "teman-rara-cron"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# Tiap 15 menit. Aman: sinkronStatusPengaduan idempoten by design (cek
+# last_status), dan jalankanPengingatJatuhTempo sekarang di-guard lewat
+# tr_invoice_reminder_sync (lihat src/lib/jobs.ts) supaya tidak kirim dobel.
+# 96 invocation/hari, jauh di bawah limit 5 cron/akun & 100rb request/hari
+# Workers Free plan.
+[triggers]
+crons = ["*/15 * * * *"]
+
+[vars]
+CRON_TARGET_URL = "https://teman-rara.rumahpandegakarya22.workers.dev/api/cron/harian"
+
+# CRON_SECRET TIDAK ditaruh di sini karena file ini biasanya masuk git.
+# Set lewat: wrangler secret put CRON_SECRET

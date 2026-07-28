@@ -74,7 +74,7 @@ export default function KalkulatorSewa({
               type="button"
               onClick={() => setBulan(o.bulan)}
               aria-pressed={bulan === o.bulan}
-              className={`min-h-12 rounded-full border px-4 t-label ${
+              className={`btn-anim min-h-12 rounded-full border px-4 t-label ${
                 bulan === o.bulan
                   ? "border-action bg-action text-on-action"
                   : "border-line bg-surface text-fg-secondary"

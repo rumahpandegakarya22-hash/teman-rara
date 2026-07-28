@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "teman-rara",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  // Dipakai OpenNext untuk on-demand revalidation (revalidatePath) via
+  // self-fetch, bukan lewat KV/queue eksternal.
+  "services": [
+    { "binding": "WORKER_SELF_REFERENCE", "service": "teman-rara" }
+  ],
+  // Cuma nilai yang TIDAK rahasia (aman ikut git). Nilai rahasia (client
+  // secret, refresh token, auth token DB, dst.) JANGAN taruh di sini —
+  // set lewat `wrangler secret put <NAMA>` (lihat README bagian deploy).
+  "vars": {
+    "DATABASE_URL": "libsql://REDACTED.turso.io",
+    "DRIVE_FOLDER_BUKTI_PEMBAYARAN_SEWA": "REDACTED_DRIVE_ID",
+    "DRIVE_FOLDER_PENGADUAN": "REDACTED_DRIVE_ID",
+    "DRIVE_DOKUMEN_PENGHUNI": "REDACTED_DRIVE_ID",
+    "DRIVE_FOLDER_BUKTI_PEMBAYARAN_DP": "REDACTED_DRIVE_ID",
+    "GOOGLE_CLIENT_ID": "1057807921556-8fbibffjqnfveuago4p41qk3m3r3g5mr.apps.googleusercontent.com",
+    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "REDACTED_CLERK_PUBLISHABLE_KEY",
+    "NEXT_PUBLIC_CLERK_SIGN_IN_URL": "/masuk",
+    "NEXT_PUBLIC_CLERK_SIGN_UP_URL": "/daftar",
+    "NEXT_PUBLIC_VAPID_PUBLIC_KEY": "REDACTED_VAPID_PUBLIC_KEY",
+    "VAPID_SUBJECT": "mailto:REDACTED"
+  }
+}

@@ -147,3 +147,72 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Item 3 — flow-button (micro): tombol mengecil saat ditekan, ikon di dalamnya
+   (beri class .icon-flow) bergeser tipis saat hover/tekan. */
+.btn-anim {
+  transition: transform 150ms var(--ease-standard);
+}
+.btn-anim:active {
+  transform: scale(0.96);
+}
+.btn-anim .icon-flow {
+  transition: transform 200ms var(--ease-standard);
+}
+.btn-anim:hover .icon-flow,
+.btn-anim:active .icon-flow {
+  transform: translateX(3px);
+}
+@media (hover: none) {
+  .btn-anim:hover .icon-flow {
+    transform: none;
+  }
+}
+
+/* Item 7 — skeleton shimmer */
+@keyframes tr-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--sunken);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.14), transparent);
+  animation: tr-shimmer 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+  }
+}
+
+/* Item 4 — gradient login page, memakai palet desain sendiri. */
+@keyframes tr-gradient-pan {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.masuk-gradient {
+  background: linear-gradient(
+    120deg,
+    var(--color-sand-900),
+    var(--color-rose-700),
+    var(--color-sand-800),
+    var(--color-red-700)
+  );
+  background-size: 300% 300%;
+  animation: tr-gradient-pan 14s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .masuk-gradient {
+    animation: none;
+  }
+}

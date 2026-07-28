@@ -1,3 +1,7 @@
+"use client";
+
+import { motion } from "motion/react";
+
 /**
  * Layer background beranda: foto dengan overlay warna surface.
  *
@@ -5,10 +9,18 @@
  * public/bg/beranda.jpg lalu ganti `backgroundImage` di bawah menjadi
  * url('/bg/beranda.jpg'). Intensitas blur dan opacity overlay mengikuti
  * spesifikasi (blur kuat, overlay surface 70%) dan bisa disetel di sini.
+ *
+ * Item 9 — hero-stagger: layer ini fade-in duluan, di belakang konten.
  */
 export default function BackgroundBeranda() {
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
+    <motion.div
+      aria-hidden
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6, ease: [0.2, 0, 0, 1] }}
+      className="pointer-events-none fixed inset-0 z-0"
+    >
       <div
         className="absolute inset-0 scale-110 bg-cover bg-center blur-2xl"
         style={{
@@ -19,6 +31,6 @@ export default function BackgroundBeranda() {
       />
       {/* Overlay warna background sekarang, opacity 70%. */}
       <div className="absolute inset-0 bg-surface/70" />
-    </div>
+    </motion.div>
   );
 }

@@ -66,7 +66,7 @@ export default function NotificationOptIn() {
       {status === "default" && (
         <button
           onClick={aktifkan}
-          className="min-h-12 shrink-0 rounded-md bg-action px-4 t-label text-on-action active:bg-action-pressed"
+          className="btn-anim min-h-12 shrink-0 rounded-md bg-action px-4 t-label text-on-action active:bg-action-pressed"
         >
           Aktifkan
         </button>

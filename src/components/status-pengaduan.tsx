@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleDashed, Loader } from "lucide-react";
+import { CheckCircle2, CircleDashed, Loader, XCircle } from "lucide-react";
 import { normalisasiStatus, type StatusBaku } from "@/lib/kategori";
 
 // Warna selalu berpasangan dengan ikon dan teks (color-independence, §10).
@@ -6,6 +6,7 @@ const TAMPILAN: Record<StatusBaku, { icon: typeof CheckCircle2; kelas: string }>
   Menunggu: { icon: CircleDashed, kelas: "bg-sunken text-fg-secondary" },
   Diproses: { icon: Loader, kelas: "bg-[#F5E7CC] text-warning" },
   Selesai: { icon: CheckCircle2, kelas: "bg-[#E6F0E6] text-success" },
+  Dibatalkan: { icon: XCircle, kelas: "bg-sunken text-fg-secondary" },
 };
 
 /** `status` datang apa adanya dari tenant_complain, termasuk nilai lama "Review". */

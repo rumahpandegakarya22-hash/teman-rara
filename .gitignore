@@ -8,6 +8,12 @@ local.db-*
 *.tsbuildinfo
 next-env.d.ts
 
+# Cloudflare / OpenNext build output & lokal dev vars
+.open-next
+.wrangler
+.dev.vars
+cloudflare-env.d.ts
+
 # clerk configuration (can include secrets)
 /.clerk/
 .env.replika

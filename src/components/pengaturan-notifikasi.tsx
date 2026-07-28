@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { motion } from "motion/react";
 import { simpanPreferensi } from "@/app/profil/actions";
 
 type Preferensi = { push: boolean; email: boolean; in_app: boolean };
@@ -53,9 +54,17 @@ export default function PengaturanNotifikasi({ awal }: { awal: Preferensi }) {
                 className="peer sr-only"
                 aria-label={label}
               />
-              {/* Knob adalah turunan, bukan sibling — jadi digeser lewat varian [&>span]. */}
-              <span className="flex h-7 w-12 items-center rounded-full bg-sunken p-1 transition-colors peer-checked:bg-action peer-checked:[&>span]:translate-x-5 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-action">
-                <span className="size-5 rounded-full bg-raised shadow transition-transform" />
+              {/* Item 5 — bouncy-toggle (micro): knob memakai spring, bukan easing linear. */}
+              <span
+                className={`flex h-7 w-12 items-center rounded-full p-1 transition-colors peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-action ${
+                  nilai[kunci] ? "bg-action" : "bg-sunken"
+                }`}
+              >
+                <motion.span
+                  className="size-5 rounded-full bg-raised shadow"
+                  animate={{ x: nilai[kunci] ? 20 : 0 }}
+                  transition={{ type: "spring", stiffness: 700, damping: 22 }}
+                />
               </span>
             </label>
           </li>

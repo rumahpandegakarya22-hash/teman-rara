@@ -106,8 +106,7 @@ Tandai akun di dashboard Clerk, Public metadata:
 | Endpoint | Fungsi |
 |---|---|
 | `POST /api/announcements` | Pasang pengumuman atau peraturan, kirim push ke semua |
-| `GET /api/cron/sinkron-pengaduan` | Deteksi perubahan status (auth: `CRON_SECRET`) |
-| `GET /api/cron/pengingat-jatuh-tempo` | Pengingat H-3 (auth: `CRON_SECRET`) |
+| `GET /api/cron/harian` | Gabungan sinkron pengaduan + pengingat jatuh tempo H-3 (auth: `CRON_SECRET`) |
 
 Status pengaduan diubah lewat dashboard existing, bukan dari sini.
 
@@ -118,8 +117,13 @@ Status pengaduan diubah lewat dashboard existing, bukan dari sini.
 - **Clerk**: isi `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` dan `CLERK_SECRET_KEY`.
   Aplikasi operasional sudah memakai Clerk, gunakan instance yang sama.
 - **Web Push**: `npx web-push generate-vapid-keys`, isi `.env`.
-- **Unggah berkas**: `src/lib/storage.ts` menulis ke folder `uploads/` lokal.
-  Vercel read-only, ganti isi `simpanGambar()` dengan UploadThing atau Cloudinary
-  sebelum deploy.
+- **Unggah berkas**: `src/lib/storage.ts` sudah upload ke Google Drive (service
+  account, folder di-set lewat env `DRIVE_FOLDER_*`), bukan filesystem lokal —
+  aman untuk platform serverless/edge apa pun.
+- **Cron (`/api/cron/harian`)**: platform deploy tidak lagi otomatis
+  menjadwalkan endpoint ini (Vercel `crons` di `vercel.json` sudah tidak
+  dipakai). Kalau deploy ke Cloudflare Pages, jalankan Worker terpisah di
+  `cron-worker/` (Cloudflare Pages tidak punya cron trigger native) — lihat
+  `cron-worker/README.md` untuk setup.
 - **Kredensial WiFi** disimpan apa adanya karena harus bisa ditampilkan ke penghuni.
   Aksesnya dibatasi per kamar, tapi kalau database bocor kredensial ikut terbaca.

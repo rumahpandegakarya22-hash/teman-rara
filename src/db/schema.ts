@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 const now = sql`(CURRENT_TIMESTAMP)`;
 
@@ -147,7 +147,14 @@ export const KATEGORI_COMPLAIN = [
   "Lainnya",
 ] as const;
 
-/** Pengaduan penghuni. Teman Rara menambah baris, pengelola mengubah status. */
+/**
+ * Pengaduan penghuni. Teman Rara menambah baris dan boleh membatalkan miliknya
+ * sendiri; pengelola mengubah status dan menulis tanggapan dari Mini Apps Ops.
+ *
+ * Kolom response_* ditambahkan migrasi kost-tiga-dara/db/schema/004 — dipetakan
+ * di sini karena dibaca halaman detail pengaduan, tapi TIDAK pernah ditulis
+ * dari aplikasi ini.
+ */
 export const tenantComplain = sqliteTable("tenant_complain", {
   id_complain: text("id_complain").primaryKey(),
   id_penghuni: text("id_penghuni").notNull(),
@@ -157,6 +164,28 @@ export const tenantComplain = sqliteTable("tenant_complain", {
   status: text("status").notNull(),
   reported_at: text("reported_at"),
   resolved_at: text("resolved_at"),
+  response_note: text("response_note"),
+  responded_by: text("responded_by"),
+  responded_at: text("responded_at"),
+});
+
+/**
+ * Saran & Kritik dari penghuni. Bedanya dengan `tenant_complain`: ini masukan,
+ * bukan tiket — tidak ada alur status yang perlu dipantau pelapornya.
+ *
+ * `deskripsi` sengaja tetap ditulis dengan format "[tanggal] [jenis] isi"
+ * mengikuti handler Ops yang sudah ada (fitur edit di sana mem-parse balik pola
+ * itu). Kolom `reported_at` (migrasi 005) yang dipakai untuk mengurutkan.
+ */
+export const feedback = sqliteTable("feedback", {
+  id_feedback: integer("id_feedback").primaryKey({ autoIncrement: true }),
+  id_penghuni: text("id_penghuni").notNull(),
+  nama: text("nama").notNull(),
+  no_kamar: integer("no_kamar").notNull(),
+  category: text("category", { enum: KATEGORI_COMPLAIN }).notNull(),
+  deskripsi: text("deskripsi"),
+  status: text("status"),
+  reported_at: text("reported_at"),
 });
 
 /* ==========================================================================
@@ -204,6 +233,12 @@ export const trPaymentProof = sqliteTable(
     catatan: text("catatan"),
     verified_at: text("verified_at"),
     verified_by: text("verified_by"),
+    // Ditambahkan migrasi kost-tiga-dara/db/schema/004. Dibaca di sini supaya
+    // penghuni tahu buktinya ditolak dan kenapa — sebelumnya bukti yang salah
+    // hanya menggantung tanpa kabar. Tidak pernah ditulis dari aplikasi ini.
+    rejected_at: text("rejected_at"),
+    rejected_by: text("rejected_by"),
+    rejected_reason: text("rejected_reason"),
     created_at: text("created_at").notNull().default(now),
   },
   (t) => [index("idx_tr_proof_penghuni").on(t.id_penghuni, t.created_at)],
@@ -312,6 +347,26 @@ export const trPendaftaran = sqliteTable(
     updated_at: text("updated_at").notNull().default(now),
   },
   (t) => [index("idx_tr_pendaftaran_kamar").on(t.no_kamar, t.created_at)],
+);
+
+/**
+ * Guard idempotensi pengingat jatuh tempo. Satu baris = satu reminder yang
+ * sudah terkirim untuk kombinasi (invoice, offset_hari) tertentu. Cron boleh
+ * jalan sesering apa pun (misal tiap 15 menit) — insert kedua untuk pasangan
+ * yang sama akan ditolak oleh primary key, jadi push tidak dobel.
+ */
+export const trInvoiceReminderSync = sqliteTable(
+  "tr_invoice_reminder_sync",
+  {
+    invoiceSewaId: integer("invoice_sewa_id")
+      .notNull()
+      .references(() => invoiceSewa.id),
+    // Selisih (periode_akhir - hari ini) dalam hari saat reminder dikirim:
+    // 7/3/1 = H-7/H-3/H-1, 0 = hari-H, -3/-7 = H+3/H+7 (telat).
+    offsetHari: integer("offset_hari").notNull(),
+    sentAt: text("sent_at").notNull().default(now),
+  },
+  (t) => [primaryKey({ columns: [t.invoiceSewaId, t.offsetHari] })],
 );
 
 export type KategoriComplain = (typeof KATEGORI_COMPLAIN)[number];

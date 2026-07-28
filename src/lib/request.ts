@@ -1,7 +1,7 @@
 import "server-only";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { tenantComplain, trComplainPhoto } from "@/db/schema";
+import { feedback, tenantComplain, trComplainPhoto } from "@/db/schema";
 
 export function getDaftarPengaduan(idPenghuni: string, limit = 30) {
   return db
@@ -29,6 +29,8 @@ export async function getPengaduan(idComplain: string, idPenghuni: string) {
       status: tenantComplain.status,
       reported_at: tenantComplain.reported_at,
       resolved_at: tenantComplain.resolved_at,
+      response_note: tenantComplain.response_note,
+      responded_at: tenantComplain.responded_at,
     })
     .from(tenantComplain)
     .where(and(eq(tenantComplain.id_complain, idComplain), eq(tenantComplain.id_penghuni, idPenghuni)))
@@ -42,4 +44,40 @@ export async function getPengaduan(idComplain: string, idPenghuni: string) {
     .where(eq(trComplainPhoto.id_complain, idComplain));
 
   return { ...row, foto };
+}
+
+/**
+ * Saran & Kritik milik penghuni. Dipisah dari daftar pengaduan karena tidak
+ * punya alur status yang bisa dipantau maupun halaman detail — isinya sudah
+ * seluruhnya ada di baris ini.
+ *
+ * `deskripsi` tersimpan sebagai "[tanggal] [jenis] judul — isi" (format yang
+ * dipakai bersama Mini Apps Ops). Di-parse balik di sini supaya penghuni
+ * melihat teksnya sendiri, bukan penanda internalnya.
+ */
+export async function getDaftarMasukan(idPenghuni: string, limit = 30) {
+  const rows = await db
+    .select({
+      id: feedback.id_feedback,
+      category: feedback.category,
+      deskripsi: feedback.deskripsi,
+      status: feedback.status,
+      reported_at: feedback.reported_at,
+    })
+    .from(feedback)
+    .where(eq(feedback.id_penghuni, idPenghuni))
+    .orderBy(desc(feedback.reported_at), desc(feedback.id_feedback))
+    .limit(limit);
+
+  return rows.map((r) => {
+    const cocok = String(r.deskripsi ?? "").match(/^\[(\d{4}-\d{2}-\d{2})\] \[([^\]]+)\] ([\s\S]*)$/);
+    return {
+      id: r.id,
+      category: r.category,
+      jenis: cocok?.[2] ?? "Masukan",
+      isi: cocok?.[3] ?? String(r.deskripsi ?? ""),
+      status: r.status,
+      tanggal: r.reported_at ?? cocok?.[1] ?? null,
+    };
+  });
 }
