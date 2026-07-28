@@ -7,6 +7,7 @@ import FormProfil from "@/components/form-profil";
 import PengaturanNotifikasi from "@/components/pengaturan-notifikasi";
 import SewaBerakhir from "@/components/sewa-berakhir";
 import TombolKeluar from "@/components/tombol-keluar";
+import { StaggerContainer, StaggerItem } from "@/components/ui/stagger";
 import { db } from "@/db";
 import { trNotificationPreference } from "@/db/schema";
 import { wajibMasuk } from "@/lib/guard";
@@ -38,7 +39,9 @@ export default async function ProfilPage() {
   const inisial = penghuni.nama.trim().charAt(0).toUpperCase();
 
   return (
-    <main className="flex flex-col gap-8 px-4 pt-6">
+    <main className="px-4 pt-6">
+    <StaggerContainer className="flex flex-col gap-8">
+      <StaggerItem>
       <header className="flex items-center gap-4">
         <span
           aria-hidden
@@ -54,7 +57,9 @@ export default async function ProfilPage() {
           </p>
         </div>
       </header>
+      </StaggerItem>
 
+      <StaggerItem>
       <section aria-labelledby="judul-data">
         <h2 id="judul-data" className="t-h3 mb-4">
           Data Kontak
@@ -65,7 +70,9 @@ export default async function ProfilPage() {
           telepon={penghuni.no_hp ?? ""}
         />
       </section>
+      </StaggerItem>
 
+      <StaggerItem>
       <section aria-labelledby="judul-keamanan">
         <h2 id="judul-keamanan" className="t-h3 mb-4">
           Keamanan Akun
@@ -83,7 +90,9 @@ export default async function ProfilPage() {
           <ChevronRight size={20} className="icon-flow shrink-0 text-fg-secondary" aria-hidden />
         </Link>
       </section>
+      </StaggerItem>
 
+      <StaggerItem>
       <section aria-labelledby="judul-notifikasi">
         <h2 id="judul-notifikasi" className="t-h3 mb-4">
           Notifikasi
@@ -96,8 +105,12 @@ export default async function ProfilPage() {
           }}
         />
       </section>
+      </StaggerItem>
 
-      <TombolKeluar />
+      <StaggerItem>
+        <TombolKeluar />
+      </StaggerItem>
+    </StaggerContainer>
     </main>
   );
 }

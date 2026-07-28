@@ -1,25 +1,15 @@
 import Link from "next/link";
-import { and, asc, eq, isNull } from "drizzle-orm";
 import { ChevronLeft, DoorClosed } from "lucide-react";
 import EmptyState from "@/components/empty-state";
 import FormPendaftaran from "@/components/form-pendaftaran";
-import { db } from "@/db";
-import { activeTenant, kamar } from "@/db/schema";
+import { getTipeKamarTersedia } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-/** Kamar kosong = tidak punya baris di active_tenant (trigger menghapusnya saat check-out). */
-function getKamarKosong() {
-  return db
-    .select({ no_kamar: kamar.no_kamar, tipe_kamar: kamar.tipe_kamar })
-    .from(kamar)
-    .leftJoin(activeTenant, eq(activeTenant.kamar_id, kamar.id_kamar))
-    .where(isNull(activeTenant.kamar_id))
-    .orderBy(asc(kamar.no_kamar));
-}
-
 export default async function PendaftaranPage() {
-  const kamarTersedia = await getKamarKosong();
+  // Tipe kamar yang ada di database — ketersediaan per tanggal dicek belakangan
+  // (langkah 1 form), jadi di sini cukup daftar tipenya saja.
+  const tipeKamar = await getTipeKamarTersedia();
 
   return (
     <main className="px-4 pt-4">
@@ -41,14 +31,14 @@ export default async function PendaftaranPage() {
         </p>
       </header>
 
-      {kamarTersedia.length === 0 ? (
+      {tipeKamar.length === 0 ? (
         <EmptyState
           icon={DoorClosed}
-          title="Semua kamar sedang terisi"
+          title="Belum ada data kamar"
           description="Hubungi pengelola untuk masuk daftar tunggu."
         />
       ) : (
-        <FormPendaftaran kamarTersedia={kamarTersedia} />
+        <FormPendaftaran tipeKamar={tipeKamar} />
       )}
     </main>
   );

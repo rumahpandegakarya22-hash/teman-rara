@@ -2,12 +2,96 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, ne } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { activeTenant, booking, kamar, trPendaftaran } from "@/db/schema";
 import { normalisasi62 } from "@/lib/phone";
 import { simpanGambar, validasiDokumen } from "@/lib/storage";
+
+export type KamarOpsi = { no_kamar: number; tipe_kamar: string | null };
+
+/**
+ * Kamar tersedia pada tanggal tertentu, bukan cuma "kosong sekarang".
+ *
+ * Kamar dianggap tersedia kalau:
+ *  - tidak ada baris active_tenant untuk kamar itu, ATAU
+ *  - penghuni aktifnya sudah/akan checkout (booking.tgl_keluar_est) pada atau
+ *    sebelum tanggal rencana masuk pendaftar baru.
+ *
+ * Booking penghuni aktif ditemukan lewat active_tenant.id_penghuni →
+ * booking.id_penghuni (booking terbaru yang belum berstatus 'Check-out'),
+ * pola yang sama dipakai submitCheckout di kost-tiga-dara (cari booking by
+ * id_penghuni, urutkan tanggal_booking terbaru). Kalau id_penghuni penghuni
+ * aktif kosong atau tidak ada booking yang cocok, kamar dianggap TIDAK
+ * tersedia (aman: tidak bisa memverifikasi tanggal keluarnya).
+ */
+async function getKamarTersedia(tanggal: string, tipeKamar?: string): Promise<KamarOpsi[]> {
+  const [semuaKamar, semuaPenghuniAktif] = await Promise.all([
+    db
+      .select({ id_kamar: kamar.id_kamar, no_kamar: kamar.no_kamar, tipe_kamar: kamar.tipe_kamar })
+      .from(kamar)
+      .where(tipeKamar ? eq(kamar.tipe_kamar, tipeKamar) : undefined)
+      .orderBy(asc(kamar.no_kamar)),
+    db.select({ kamar_id: activeTenant.kamar_id, id_penghuni: activeTenant.id_penghuni }).from(activeTenant),
+  ]);
+
+  const penghuniPerKamar = new Map(
+    semuaPenghuniAktif.filter((p) => p.id_penghuni).map((p) => [p.kamar_id, p.id_penghuni as string]),
+  );
+  if (penghuniPerKamar.size === 0) {
+    return semuaKamar.map(({ no_kamar, tipe_kamar }) => ({ no_kamar, tipe_kamar }));
+  }
+
+  const idPenghuniList = [...new Set(penghuniPerKamar.values())];
+  const bookingAktif = await db
+    .select({
+      id_penghuni: booking.id_penghuni,
+      tgl_keluar_est: booking.tgl_keluar_est,
+      tanggal_booking: booking.tanggal_booking,
+    })
+    .from(booking)
+    .where(and(inArray(booking.id_penghuni, idPenghuniList), ne(booking.status_booking, "Check-out")));
+
+  // Ambil booking terbaru per id_penghuni (bisa lebih dari satu riwayat booking).
+  const bookingTerbaru = new Map<string, { tgl_keluar_est: string | null; tanggal_booking: string | null }>();
+  for (const b of bookingAktif) {
+    if (!b.id_penghuni) continue;
+    const ada = bookingTerbaru.get(b.id_penghuni);
+    if (!ada || (b.tanggal_booking ?? "") > (ada.tanggal_booking ?? "")) {
+      bookingTerbaru.set(b.id_penghuni, b);
+    }
+  }
+
+  return semuaKamar
+    .filter((k) => {
+      const idPenghuni = penghuniPerKamar.get(k.id_kamar);
+      if (!idPenghuni) return true; // tidak ada active_tenant sama sekali
+      const bk = bookingTerbaru.get(idPenghuni);
+      return !!bk?.tgl_keluar_est && bk.tgl_keluar_est <= tanggal;
+    })
+    .map(({ no_kamar, tipe_kamar }) => ({ no_kamar, tipe_kamar }));
+}
+
+/** Daftar tipe kamar yang benar-benar ada di database, untuk dropdown langkah 1. */
+export async function getTipeKamarTersedia(): Promise<string[]> {
+  const rows = await db.selectDistinct({ tipe_kamar: kamar.tipe_kamar }).from(kamar);
+  return rows.map((r) => r.tipe_kamar).filter((t): t is string => !!t).sort();
+}
+
+export type KetersediaanState = { kamar: KamarOpsi[]; error?: string };
+
+const tanggalSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Tanggal tidak valid");
+
+/** Dipanggil langsung dari form (bukan submit) saat pendaftar memilih tanggal + tipe kamar. */
+export async function cekKetersediaan(tanggal: string, tipeKamar: string): Promise<KetersediaanState> {
+  const parsedTanggal = tanggalSchema.safeParse(tanggal);
+  if (!parsedTanggal.success || !tipeKamar.trim()) {
+    return { kamar: [], error: "Isi tanggal dan tipe kamar dulu." };
+  }
+  const hasil = await getKamarTersedia(parsedTanggal.data, tipeKamar);
+  return { kamar: hasil };
+}
 
 const hp = z
   .string()
@@ -89,16 +173,13 @@ export async function kirimPendaftaran(
     if (!cek.ok) return { error: cek.pesan };
   }
 
-  // Kamar harus ada dan belum ditempati.
-  const [kamarDipilih] = await db
-    .select({ no_kamar: kamar.no_kamar })
-    .from(kamar)
-    // Kamar terisi = ada baris active_tenant. Trigger checkout menghapusnya.
-    .leftJoin(activeTenant, eq(activeTenant.kamar_id, kamar.id_kamar))
-    .where(and(eq(kamar.no_kamar, Number(d.no_kamar)), isNull(activeTenant.kamar_id)))
-    .limit(1);
+  // Kamar harus tersedia PADA tanggal rencana masuk — bukan cuma kosong saat
+  // ini. Cek ulang di server (bukan cuma percaya pilihan client) memakai
+  // logika yang sama dengan cekKetersediaan.
+  const tersedia = await getKamarTersedia(d.rencana_masuk);
+  const kamarDipilih = tersedia.find((k) => k.no_kamar === Number(d.no_kamar));
   if (!kamarDipilih) {
-    return { error: "Kamar itu tidak tersedia. Pilih kamar lain atau hubungi pengelola." };
+    return { error: "Kamar itu tidak tersedia pada tanggal itu. Pilih kamar/tanggal lain atau hubungi pengelola." };
   }
 
   const noBooking = buatNoBooking();

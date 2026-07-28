@@ -4,6 +4,7 @@ import { ChevronRight, MessageSquareWarning, Plus } from "lucide-react";
 import EmptyState from "@/components/empty-state";
 import SewaBerakhir from "@/components/sewa-berakhir";
 import StatusPengaduan from "@/components/status-pengaduan";
+import { StaggerContainer, StaggerItem } from "@/components/ui/stagger";
 import { formatTanggal } from "@/lib/format";
 import { wajibMasuk } from "@/lib/guard";
 import { LABEL_KATEGORI } from "@/lib/kategori";
@@ -32,30 +33,38 @@ export default async function PengaduanPage({
 
   return (
     <main className="px-4 pt-6">
-      <header className="mb-6">
+    <StaggerContainer className="flex flex-col gap-6">
+      <StaggerItem>
+      <header>
         <h1 className="t-h1">Pengaduan</h1>
         <p className="t-body-sm mt-2 text-fg-secondary">
           Laporkan kerusakan atau kendala di kamarmu, lalu pantau penanganannya. Saran dan kritik juga
           bisa dikirim dari sini.
         </p>
       </header>
+      </StaggerItem>
 
       {/* Saran & Kritik tidak punya halaman detail untuk dituju setelah kirim,
           jadi tanpa penanda ini pengirimnya kembali ke daftar tanpa tahu apakah
           masukannya benar-benar masuk. */}
       {terkirim === "1" && (
-        <p role="status" className="mb-6 rounded-md bg-raised p-4 t-body-sm border border-line">
+        <StaggerItem>
+        <p role="status" className="rounded-md bg-raised p-4 t-body-sm border border-line">
           Masukanmu sudah terkirim. Terima kasih.
         </p>
+        </StaggerItem>
       )}
 
       {daftar.length === 0 && masukan.length === 0 ? (
+        <StaggerItem>
         <EmptyState
           icon={MessageSquareWarning}
           title="Belum ada pengaduan"
           description="Kalau ada yang rusak atau mengganggu, laporkan lewat tombol tambah di bawah."
         />
+        </StaggerItem>
       ) : (
+        <StaggerItem>
         <ul className="flex flex-col gap-3">
           {daftar.map((item) => (
             <li key={item.id_complain}>
@@ -80,10 +89,12 @@ export default async function PengaduanPage({
             </li>
           ))}
         </ul>
+        </StaggerItem>
       )}
 
       {masukan.length > 0 && (
-        <section className="mt-8 mb-24">
+        <StaggerItem>
+        <section className="mb-24">
           <h2 className="t-h3 mb-3">Saran &amp; Kritik</h2>
           {/* Tidak bisa diklik: berbeda dari pengaduan, masukan tidak punya alur
               penanganan untuk dipantau — isinya sudah seluruhnya di kartu ini. */}
@@ -102,7 +113,9 @@ export default async function PengaduanPage({
             ))}
           </ul>
         </section>
+        </StaggerItem>
       )}
+    </StaggerContainer>
 
       <Link
         href="/pengaduan/baru"
