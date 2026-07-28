@@ -5,6 +5,7 @@ import KalkulatorSewa from "@/components/kalkulator-sewa";
 import RiwayatPembayaranSoon from "@/components/riwayat-pembayaran-soon";
 import SewaBerakhir from "@/components/sewa-berakhir";
 import UploadBukti from "@/components/upload-bukti";
+import { StaggerContainer, StaggerItem } from "@/components/ui/stagger";
 import WifiCard from "@/components/wifi-card";
 import { formatRupiah, formatTanggal } from "@/lib/format";
 import { wajibMasuk } from "@/lib/guard";
@@ -37,12 +38,16 @@ export default async function KamarPage() {
     .filter(Boolean);
 
   return (
-    <main className="flex flex-col gap-6 px-4 pt-6">
+    <main className="px-4 pt-6">
+    <StaggerContainer className="flex flex-col gap-6">
+      <StaggerItem>
       <header>
         <p className="t-overline text-fg-secondary">Kamar {penghuni.no_kamar}</p>
         <h1 className="t-h1 mt-1">Halo, {penghuni.nama.split(" ")[0]}</h1>
       </header>
+      </StaggerItem>
 
+      <StaggerItem>
       <section className="rounded-lg border border-line bg-raised p-5 elev-1">
         <h2 className="t-h3 mb-4 flex items-center gap-2">
           <BedDouble size={20} className="text-action" aria-hidden />
@@ -90,14 +95,18 @@ export default async function KamarPage() {
           </div>
         )}
       </section>
+      </StaggerItem>
 
       {penghuni.wifi_ssid && penghuni.wifi_password && (
-        <WifiCard ssid={penghuni.wifi_ssid} password={penghuni.wifi_password} />
+        <StaggerItem>
+          <WifiCard ssid={penghuni.wifi_ssid} password={penghuni.wifi_password} />
+        </StaggerItem>
       )}
 
       {/* Tagihan baru ditampilkan saat mendekati jatuh tempo (7 hari) atau sudah
           lewat. Di luar itu penghuni tidak perlu diingatkan. */}
       {tampilkanTagihan && tagihan && (
+        <StaggerItem>
         <section aria-labelledby="judul-tagihan">
           <h2 id="judul-tagihan" className="t-h3 mb-3 flex items-center gap-2">
             <ReceiptText size={20} className="text-action" aria-hidden />
@@ -108,8 +117,10 @@ export default async function KamarPage() {
             {tagihan.status !== "lunas" && <UploadBukti invoiceSewaId={tagihan.id} />}
           </div>
         </section>
+        </StaggerItem>
       )}
 
+      <StaggerItem>
       <KalkulatorSewa
         tarif={{
           harga_3bulan: penghuni.harga_3bulan,
@@ -121,10 +132,14 @@ export default async function KamarPage() {
         listrikPerBulan={tagihan?.tambahan_listrik ?? 0}
         mulaiDari={tagihan?.periode_akhir ?? null}
       />
+      </StaggerItem>
 
-      <RiwayatPembayaranSoon />
+      <StaggerItem>
+        <RiwayatPembayaranSoon />
+      </StaggerItem>
 
       {riwayat.length > 0 && (
+        <StaggerItem>
         <section>
           <h2 className="t-h3 mb-3">Riwayat Bukti Bayar</h2>
           <ul className="flex flex-col gap-2">
@@ -155,7 +170,9 @@ export default async function KamarPage() {
             ))}
           </ul>
         </section>
+        </StaggerItem>
       )}
+    </StaggerContainer>
     </main>
   );
 }
