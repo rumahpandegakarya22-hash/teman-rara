@@ -5,6 +5,8 @@ import { Lora, Poppins } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/bottom-nav";
 import InstallPrompt from "@/components/install-prompt";
+import MotionProvider from "@/components/motion-provider";
+import PageTransition from "@/components/page-transition";
 import ServiceWorkerRegistrar from "@/components/service-worker-registrar";
 
 const lora = Lora({ subsets: ["latin"], variable: "--font-lora", display: "swap" });
@@ -54,10 +56,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="id" className={`${lora.variable} ${poppins.variable}`}>
       <body>
         <ClerkProvider localization={idID} appearance={{ variables: clerkVariables }}>
-          <ServiceWorkerRegistrar />
-          <div className="mx-auto min-h-dvh w-full max-w-[720px] pb-24">{children}</div>
-          <InstallPrompt />
-          <BottomNav />
+          <MotionProvider>
+            <ServiceWorkerRegistrar />
+            <div className="mx-auto min-h-dvh w-full max-w-[720px] pb-24">
+              <PageTransition>{children}</PageTransition>
+            </div>
+            <InstallPrompt />
+            <BottomNav />
+          </MotionProvider>
         </ClerkProvider>
       </body>
     </html>

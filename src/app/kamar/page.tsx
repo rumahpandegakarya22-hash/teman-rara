@@ -136,10 +136,19 @@ export default async function KamarPage() {
                 <div className="min-w-0">
                   <p className="t-body-sm font-medium">{formatTanggal(b.created_at)}</p>
                   <p className="t-caption text-fg-secondary">
-                    {b.verified_at ? "Terverifikasi pengelola" : "Menunggu verifikasi"}
+                    {b.verified_at
+                      ? "Terverifikasi pengelola"
+                      : b.rejected_at
+                        ? "Ditolak pengelola"
+                        : "Menunggu verifikasi"}
                   </p>
+                  {/* Alasan penolakan ditampilkan penuh: tanpa itu penghuni tidak
+                      tahu apa yang harus diperbaiki saat mengunggah ulang. */}
+                  {b.rejected_at && b.rejected_reason && (
+                    <p className="t-caption mt-1 text-danger">{b.rejected_reason}</p>
+                  )}
                 </div>
-                <a href={b.file_url} target="_blank" rel="noreferrer" className="t-label text-action">
+                <a href={b.file_url} target="_blank" rel="noreferrer" className="btn-anim t-label text-action">
                   Lihat
                 </a>
               </li>

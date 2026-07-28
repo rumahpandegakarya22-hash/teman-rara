@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "motion/react";
 import { Home, MessageSquareWarning, BedDouble, User } from "lucide-react";
 
 const tabs = [
@@ -29,12 +30,20 @@ export default function BottomNav() {
                 aria-current={active ? "page" : undefined}
                 className="flex min-h-[56px] flex-col items-center justify-center gap-1 py-2"
               >
-                <Icon
-                  size={24}
-                  strokeWidth={active ? 2.25 : 1.75}
-                  className={active ? "text-action" : "text-fg-secondary"}
-                  aria-hidden
-                />
+                {/* Item 2 — dock (micro): ikon terangkat/membesar saat aktif, mengecil saat ditekan. */}
+                <motion.span
+                  animate={{ y: active ? -3 : 0, scale: active ? 1.12 : 1 }}
+                  whileTap={{ scale: 0.86 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 28 }}
+                  className="flex"
+                >
+                  <Icon
+                    size={24}
+                    strokeWidth={active ? 2.25 : 1.75}
+                    className={active ? "text-action" : "text-fg-secondary"}
+                    aria-hidden
+                  />
+                </motion.span>
                 <span className={`t-caption ${active ? "text-action font-semibold" : "text-fg-secondary"}`}>
                   {label}
                 </span>

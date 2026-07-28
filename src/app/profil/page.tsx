@@ -73,14 +73,14 @@ export default async function ProfilPage() {
         {/* Kata sandi dan foto profil dikelola Clerk, bukan database kost. */}
         <Link
           href="/profil/akun"
-          className="flex min-h-12 items-center gap-3 rounded-lg border border-line bg-raised p-5"
+          className="btn-anim flex min-h-12 items-center gap-3 rounded-lg border border-line bg-raised p-5"
         >
           <KeyRound size={20} className="shrink-0 text-action" aria-hidden />
           <span className="flex-1">
             <span className="t-body block font-medium">Kata sandi & foto profil</span>
             <span className="t-caption text-fg-secondary">Ganti kata sandi atau foto</span>
           </span>
-          <ChevronRight size={20} className="shrink-0 text-fg-secondary" aria-hidden />
+          <ChevronRight size={20} className="icon-flow shrink-0 text-fg-secondary" aria-hidden />
         </Link>
       </section>
 

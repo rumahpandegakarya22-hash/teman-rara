@@ -32,9 +32,9 @@ export default async function RiwayatPembayaranPage() {
       <div className="safe-top" />
       <Link
         href="/kamar"
-        className="-ml-2 inline-flex min-h-12 items-center gap-1 px-2 t-label text-fg-secondary"
+        className="btn-anim -ml-2 inline-flex min-h-12 items-center gap-1 px-2 t-label text-fg-secondary"
       >
-        <ChevronLeft size={20} aria-hidden />
+        <ChevronLeft size={20} className="icon-flow" aria-hidden />
         Kamar
       </Link>
 

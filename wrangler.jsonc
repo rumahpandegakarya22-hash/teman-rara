@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "teman-rara",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  // Dipakai OpenNext untuk on-demand revalidation (revalidatePath) via
+  // self-fetch, bukan lewat KV/queue eksternal.
+  "services": [
+    { "binding": "WORKER_SELF_REFERENCE", "service": "teman-rara" }
+  ],
+  // Cuma nilai yang TIDAK rahasia (aman ikut git). Nilai rahasia (client
+  // secret, refresh token, auth token DB, dst.) JANGAN taruh di sini —
+  // set lewat `wrangler secret put <NAMA>` (lihat README bagian deploy).
+  "vars": {
+    "DATABASE_URL": "libsql://kost-tiga-dara-rumahpandegakarya22-hash.aws-ap-northeast-1.turso.io",
+    "DRIVE_FOLDER_BUKTI_PEMBAYARAN_SEWA": "16XHKIxXGnUWR8QWkdM-RIn4N7-zl5YWH",
+    "DRIVE_FOLDER_PENGADUAN": "1ds_zo2J_JtWhJG46iD5pCWSL5UqBGxt2",
+    "DRIVE_DOKUMEN_PENGHUNI": "1g4Sla6Z7HmwS5R8FHPrSY8QyJBCVtChz",
+    "DRIVE_FOLDER_BUKTI_PEMBAYARAN_DP": "1dUPUivPMl2CsPYHvEHy5Dxh0EL66NQlJ",
+    "GOOGLE_CLIENT_ID": "1057807921556-8fbibffjqnfveuago4p41qk3m3r3g5mr.apps.googleusercontent.com",
+    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_cGxlYXNhbnQtY3Jvdy04MC5jbGVyay5hY2NvdW50cy5kZXYk",
+    "NEXT_PUBLIC_CLERK_SIGN_IN_URL": "/masuk",
+    "NEXT_PUBLIC_CLERK_SIGN_UP_URL": "/daftar",
+    "NEXT_PUBLIC_VAPID_PUBLIC_KEY": "BC-1z9l2tR2pxSRnOGi1phuSfKGjokS6eO8edhYnnry7pFsyITjtM8XxDCAhhnFgSTLMwDeH972T10MSAq_d2J8",
+    "VAPID_SUBJECT": "mailto:rumahpandegakarya22@gmail.com"
+  }
+}

@@ -65,7 +65,7 @@ export default function UpdateWatcher() {
           localStorage.setItem(SEEN_KEY, pembaruan);
           location.reload();
         }}
-        className="min-h-12 rounded-md px-3 t-label text-action"
+        className="btn-anim min-h-12 rounded-md px-3 t-label text-action"
       >
         Muat ulang
       </button>

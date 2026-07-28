@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { Check, Copy, Eye, EyeOff, Wifi } from "lucide-react";
 
 export default function WifiCard({ ssid, password }: { ssid: string; password: string }) {
@@ -33,9 +34,34 @@ export default function WifiCard({ ssid, password }: { ssid: string; password: s
           <button
             onClick={() => salin(ssid, "user")}
             aria-label="Salin nama jaringan WiFi"
-            className="flex size-12 shrink-0 items-center justify-center rounded-md text-fg-secondary"
+            className="btn-anim flex size-12 shrink-0 items-center justify-center rounded-md text-fg-secondary"
           >
-            {disalin === "user" ? <Check size={20} className="text-success" /> : <Copy size={20} />}
+            {/* Item 8 — copy button (micro): ikon morph jadi centang saat disalin. */}
+            <AnimatePresence mode="wait" initial={false}>
+              {disalin === "user" ? (
+                <motion.span
+                  key="check"
+                  initial={{ scale: 0.5, opacity: 0, rotate: -45 }}
+                  animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                  exit={{ scale: 0.5, opacity: 0 }}
+                  transition={{ duration: 0.2, ease: [0, 0, 0, 1] }}
+                  className="flex"
+                >
+                  <Check size={20} className="text-success" />
+                </motion.span>
+              ) : (
+                <motion.span
+                  key="copy"
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.5, opacity: 0, rotate: 45 }}
+                  transition={{ duration: 0.2, ease: [0, 0, 0, 1] }}
+                  className="flex"
+                >
+                  <Copy size={20} />
+                </motion.span>
+              )}
+            </AnimatePresence>
           </button>
         </div>
 
@@ -48,16 +74,40 @@ export default function WifiCard({ ssid, password }: { ssid: string; password: s
             <button
               onClick={() => setTampil((v) => !v)}
               aria-label={tampil ? "Sembunyikan kata sandi WiFi" : "Tampilkan kata sandi WiFi"}
-              className="flex size-12 items-center justify-center rounded-md text-fg-secondary"
+              className="btn-anim flex size-12 items-center justify-center rounded-md text-fg-secondary"
             >
               {tampil ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
             <button
               onClick={() => salin(password, "pass")}
               aria-label="Salin kata sandi WiFi"
-              className="flex size-12 items-center justify-center rounded-md text-fg-secondary"
+              className="btn-anim flex size-12 items-center justify-center rounded-md text-fg-secondary"
             >
-              {disalin === "pass" ? <Check size={20} className="text-success" /> : <Copy size={20} />}
+              <AnimatePresence mode="wait" initial={false}>
+                {disalin === "pass" ? (
+                  <motion.span
+                    key="check"
+                    initial={{ scale: 0.5, opacity: 0, rotate: -45 }}
+                    animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                    exit={{ scale: 0.5, opacity: 0 }}
+                    transition={{ duration: 0.2, ease: [0, 0, 0, 1] }}
+                    className="flex"
+                  >
+                    <Check size={20} className="text-success" />
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="copy"
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.5, opacity: 0, rotate: 45 }}
+                    transition={{ duration: 0.2, ease: [0, 0, 0, 1] }}
+                    className="flex"
+                  >
+                    <Copy size={20} />
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </button>
           </div>
         </div>

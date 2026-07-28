@@ -13,9 +13,9 @@ export default function TombolKeluar() {
     <>
       <button
         onClick={() => setKonfirmasi(true)}
-        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-md border border-fg px-6 t-label"
+        className="btn-anim flex min-h-12 w-full items-center justify-center gap-2 rounded-md border border-fg px-6 t-label"
       >
-        <LogOut size={20} aria-hidden />
+        <LogOut size={20} className="icon-flow" aria-hidden />
         Keluar
       </button>
 
@@ -36,7 +36,7 @@ export default function TombolKeluar() {
             <div className="mt-6 flex gap-3">
               <button
                 onClick={() => setKonfirmasi(false)}
-                className="min-h-12 flex-1 rounded-md border border-fg px-4 t-label"
+                className="btn-anim min-h-12 flex-1 rounded-md border border-fg px-4 t-label"
               >
                 Batal
               </button>
@@ -46,7 +46,7 @@ export default function TombolKeluar() {
                   signOut({ redirectUrl: "/" });
                 }}
                 disabled={proses}
-                className="min-h-12 flex-1 rounded-md bg-red-700 px-4 t-label text-on-action disabled:opacity-60"
+                className="btn-anim min-h-12 flex-1 rounded-md bg-red-700 px-4 t-label text-on-action disabled:opacity-60"
               >
                 {proses ? "Keluar…" : "Ya, Keluar"}
               </button>

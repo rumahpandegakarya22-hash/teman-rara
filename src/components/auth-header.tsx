@@ -8,16 +8,16 @@ export default function AuthHeader() {
       <Show when="signed-out">
         <Link
           href="/masuk"
-          className="inline-flex min-h-12 items-center gap-2 rounded-md px-3 t-label text-action"
+          className="btn-anim inline-flex min-h-12 items-center gap-2 rounded-md px-3 t-label text-action"
         >
-          <LogIn size={20} aria-hidden />
+          <LogIn size={20} className="icon-flow" aria-hidden />
           Masuk
         </Link>
       </Show>
       <Show when="signed-in">
         <Link
           href="/kamar"
-          className="inline-flex min-h-12 items-center rounded-md px-3 t-label text-action"
+          className="btn-anim inline-flex min-h-12 items-center rounded-md px-3 t-label text-action"
         >
           Kamar Saya
         </Link>

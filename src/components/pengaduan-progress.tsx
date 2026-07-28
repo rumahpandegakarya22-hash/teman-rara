@@ -17,7 +17,7 @@ export default function PengaduanProgress({
       </h2>
       <Link
         href={`/pengaduan/${aduan.id_complain}`}
-        className="flex items-center gap-3 rounded-lg border border-line bg-raised p-5 elev-1"
+        className="btn-anim flex items-center gap-3 rounded-lg border border-line bg-raised p-5 elev-1"
       >
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -28,7 +28,7 @@ export default function PengaduanProgress({
             <p className="t-caption mt-1 text-fg-secondary">Diajukan {formatTanggal(aduan.reported_at)}</p>
           )}
         </div>
-        <ChevronRight size={20} className="shrink-0 text-fg-secondary" aria-hidden />
+        <ChevronRight size={20} className="icon-flow shrink-0 text-fg-secondary" aria-hidden />
       </Link>
     </section>
   );

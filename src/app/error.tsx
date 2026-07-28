@@ -18,7 +18,7 @@ export default function Error({ reset }: { error: Error; reset: () => void }) {
       </p>
       <button
         onClick={reset}
-        className="mt-2 min-h-12 rounded-md bg-action px-6 t-label text-on-action active:bg-action-pressed"
+        className="btn-anim mt-2 min-h-12 rounded-md bg-action px-6 t-label text-on-action active:bg-action-pressed"
       >
         Coba Lagi
       </button>

@@ -11,7 +11,7 @@ function SubmitButton({ aktif }: { aktif: boolean }) {
     <button
       type="submit"
       disabled={!aktif || pending}
-      className="min-h-12 flex-1 rounded-md bg-action px-6 t-label text-on-action active:bg-action-pressed disabled:bg-sunken disabled:text-fg-disabled"
+      className="btn-anim min-h-12 flex-1 rounded-md bg-action px-6 t-label text-on-action active:bg-action-pressed disabled:bg-sunken disabled:text-fg-disabled"
     >
       {pending ? "Mengirim…" : "Kirim Bukti"}
     </button>
@@ -95,7 +95,7 @@ export default function UploadBukti({ invoiceSewaId }: { invoiceSewaId: number }
               type="button"
               onClick={batal}
               aria-label="Hapus foto yang dipilih"
-              className="absolute right-2 top-2 flex size-12 items-center justify-center rounded-full bg-surface/90 text-fg"
+              className="btn-anim absolute right-2 top-2 flex size-12 items-center justify-center rounded-full bg-surface/90 text-fg"
             >
               <X size={20} aria-hidden />
             </button>
@@ -105,17 +105,17 @@ export default function UploadBukti({ invoiceSewaId }: { invoiceSewaId: number }
             <button
               type="button"
               onClick={() => bukaPemilih(true)}
-              className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-md border border-fg px-4 t-label"
+              className="btn-anim flex min-h-12 flex-1 items-center justify-center gap-2 rounded-md border border-fg px-4 t-label"
             >
-              <Camera size={20} aria-hidden />
+              <Camera size={20} className="icon-flow" aria-hidden />
               Kamera
             </button>
             <button
               type="button"
               onClick={() => bukaPemilih(false)}
-              className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-md border border-fg px-4 t-label"
+              className="btn-anim flex min-h-12 flex-1 items-center justify-center gap-2 rounded-md border border-fg px-4 t-label"
             >
-              <ImageIcon size={20} aria-hidden />
+              <ImageIcon size={20} className="icon-flow" aria-hidden />
               Galeri
             </button>
           </div>
@@ -126,7 +126,7 @@ export default function UploadBukti({ invoiceSewaId }: { invoiceSewaId: number }
             <button
               type="button"
               onClick={batal}
-              className="min-h-12 rounded-md border border-fg px-6 t-label"
+              className="btn-anim min-h-12 rounded-md border border-fg px-6 t-label"
             >
               Batal
             </button>

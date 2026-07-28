@@ -1,5 +1,12 @@
 import "server-only";
-import { google } from "googleapis";
+import { auth as googleAuth, drive } from "@googleapis/drive";
+
+/**
+ * Pakai `@googleapis/drive` (paket per-API), BUKAN `googleapis` — paket
+ * umbrella itu membundel ~250 Google API client sekaligus (~46 MB), lewat
+ * batas ukuran Worker Cloudflare (3 MB free / 10 MB paid) padahal cuma Drive
+ * yang dipakai di sini.
+ */
 
 function createAuth() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -12,13 +19,13 @@ function createAuth() {
     );
   }
 
-  const auth = new google.auth.OAuth2(clientId, clientSecret);
+  const client = new googleAuth.OAuth2(clientId, clientSecret);
 
-  auth.setCredentials({
+  client.setCredentials({
     refresh_token: refreshToken,
   });
 
-  return auth;
+  return client;
 }
 
 let auth: ReturnType<typeof createAuth> | null = null;
@@ -31,17 +38,17 @@ function getAuth() {
   return auth;
 }
 
-let drive: ReturnType<typeof google.drive> | null = null;
+let driveInstance: ReturnType<typeof drive> | null = null;
 
 export function driveClient() {
-  if (!drive) {
-    drive = google.drive({
+  if (!driveInstance) {
+    driveInstance = drive({
       version: "v3",
       auth: getAuth(),
     });
   }
 
-  return drive;
+  return driveInstance;
 }
 
 export function driveSiap(): boolean {

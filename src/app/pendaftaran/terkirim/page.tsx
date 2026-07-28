@@ -29,7 +29,7 @@ export default async function PendaftaranTerkirimPage({
       </p>
       <Link
         href="/"
-        className="mt-2 inline-flex min-h-12 items-center rounded-md bg-action px-6 t-label text-on-action"
+        className="btn-anim mt-2 inline-flex min-h-12 items-center rounded-md bg-action px-6 t-label text-on-action"
       >
         Kembali ke Beranda
       </Link>

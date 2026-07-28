@@ -15,7 +15,7 @@ export default function SewaBerakhir() {
       </p>
       <Link
         href="/"
-        className="mt-2 inline-flex min-h-12 items-center rounded-md bg-action px-6 t-label text-on-action"
+        className="btn-anim mt-2 inline-flex min-h-12 items-center rounded-md bg-action px-6 t-label text-on-action"
       >
         Ke Papan Informasi
       </Link>

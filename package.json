@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "db:replika": "node --env-file=.env scripts/setup-replika.mjs",
     "db:seed": "tsx --env-file=.env src/db/seed.ts",
     "db:seed-uji": "node --env-file=.env scripts/seed-uji.mjs"
@@ -14,10 +17,13 @@
   "dependencies": {
     "@clerk/localizations": "^4.13.6",
     "@clerk/nextjs": "^7.5.22",
+    "@googleapis/drive": "^20.2.0",
     "@libsql/client": "^0.15.15",
+    "@libsql/isomorphic-ws": "^0.1.5",
+    "@opennextjs/cloudflare": "^1.20.2",
     "drizzle-orm": "^0.45.2",
-    "googleapis": "^173.0.0",
     "lucide-react": "^0.550.0",
+    "motion": "^12.42.2",
     "next": "^16.2.11",
     "open": "^11.0.0",
     "react": "^19.2.8",
@@ -35,6 +41,7 @@
     "drizzle-kit": "^0.31.5",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "wrangler": "^4.114.0"
   }
 }

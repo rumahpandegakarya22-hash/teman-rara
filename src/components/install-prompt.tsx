@@ -37,7 +37,7 @@ export default function InstallPrompt() {
             Buka Teman Rara langsung dari ikon, tanpa membuka peramban.
           </p>
         </div>
-        <button onClick={dismiss} aria-label="Tutup ajakan instal" className="-m-2 p-2 text-fg-secondary">
+        <button onClick={dismiss} aria-label="Tutup ajakan instal" className="btn-anim -m-2 p-2 text-fg-secondary">
           <X size={20} aria-hidden />
         </button>
       </div>
@@ -47,7 +47,7 @@ export default function InstallPrompt() {
           await deferred.userChoice;
           setDeferred(null);
         }}
-        className="mt-4 min-h-12 w-full rounded-md bg-action px-6 t-label text-on-action active:bg-action-pressed"
+        className="btn-anim mt-4 min-h-12 w-full rounded-md bg-action px-6 t-label text-on-action active:bg-action-pressed"
       >
         Tambahkan Sekarang
       </button>

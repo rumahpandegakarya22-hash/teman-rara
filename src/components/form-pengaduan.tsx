@@ -2,27 +2,37 @@
 
 import { useActionState, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
+import { AnimatePresence, motion } from "motion/react";
 import { AlertCircle, Camera, ImageIcon, X } from "lucide-react";
 import { kirimPengaduan, type PengaduanState } from "@/app/pengaduan/actions";
-import { KATEGORI, LABEL_KATEGORI, type Kategori } from "@/lib/kategori";
+import {
+  DESKRIPSI_JENIS,
+  JENIS_MASUKAN,
+  KATEGORI,
+  LABEL_KATEGORI,
+  jadiTiket,
+  type JenisMasukan,
+  type Kategori,
+} from "@/lib/kategori";
 
 const MAKS_FOTO = 3;
 
-function SubmitButton() {
+function SubmitButton({ jenis }: { jenis: JenisMasukan }) {
   const { pending } = useFormStatus();
   return (
     <button
       type="submit"
       disabled={pending}
-      className="min-h-12 w-full rounded-md bg-action px-6 t-label text-on-action active:bg-action-pressed disabled:bg-sunken disabled:text-fg-disabled"
+      className="btn-anim min-h-12 w-full rounded-md bg-action px-6 t-label text-on-action active:bg-action-pressed disabled:bg-sunken disabled:text-fg-disabled"
     >
-      {pending ? "Mengirim…" : "Simpan Pengaduan"}
+      {pending ? "Mengirim…" : jadiTiket(jenis) ? "Simpan Pengaduan" : `Kirim ${jenis}`}
     </button>
   );
 }
 
 export default function FormPengaduan() {
   const [state, action] = useActionState<PengaduanState, FormData>(kirimPengaduan, {});
+  const [jenis, setJenis] = useState<JenisMasukan>(JENIS_MASUKAN[0]);
   // Ambil dari daftar, bukan tulis manual: nilainya harus persis sama dengan
   // CHECK(category) di tenant_complain, kalau meleset database menolak.
   const [kategori, setKategori] = useState<Kategori>(KATEGORI[0]);
@@ -55,7 +65,9 @@ export default function FormPengaduan() {
   // menyusun ulang FormData supaya isinya persis yang terlihat di pratinjau.
   const kirim = (formData: FormData) => {
     formData.delete("foto");
-    for (const { file } of pratinjau) formData.append("foto", file);
+    // Foto yang sempat dipilih lalu jenisnya diganti ke Saran/Kritik tidak ikut
+    // terkirim — kalau ikut, berkasnya terunggah ke Drive tanpa pernah dirujuk.
+    if (jadiTiket(jenis)) for (const { file } of pratinjau) formData.append("foto", file);
     return action(formData);
   };
 
@@ -69,7 +81,28 @@ export default function FormPengaduan() {
       )}
 
       <fieldset>
-        <legend className="t-label mb-3">Jenis kendala</legend>
+        <legend className="t-label mb-3">Jenis masukan</legend>
+        <input type="hidden" name="jenis" value={jenis} />
+        <div className="flex flex-col gap-2">
+          {JENIS_MASUKAN.map((j) => (
+            <button
+              key={j}
+              type="button"
+              onClick={() => setJenis(j)}
+              aria-pressed={jenis === j}
+              className={`btn-anim min-h-12 rounded-md border px-4 py-3 text-left ${
+                jenis === j ? "border-action bg-raised" : "border-line bg-raised"
+              }`}
+            >
+              <span className={`t-label block ${jenis === j ? "text-action" : ""}`}>{j}</span>
+              <span className="t-caption text-fg-secondary">{DESKRIPSI_JENIS[j]}</span>
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend className="t-label mb-3">Terkait</legend>
         <input type="hidden" name="category" value={kategori} />
         <div className="flex flex-wrap gap-2">
           {KATEGORI.map((k) => (
@@ -78,7 +111,7 @@ export default function FormPengaduan() {
               type="button"
               onClick={() => setKategori(k)}
               aria-pressed={kategori === k}
-              className={`min-h-12 rounded-full border px-4 t-label ${
+              className={`btn-anim min-h-12 rounded-full border px-4 t-label ${
                 kategori === k
                   ? "border-action bg-action text-on-action"
                   : "border-line bg-raised text-fg-secondary"
@@ -107,7 +140,7 @@ export default function FormPengaduan() {
 
       <div>
         <label htmlFor="description" className="t-label mb-2 block">
-          Rincian kendala
+          {jadiTiket(jenis) ? "Rincian kendala" : "Rincian masukan"}
         </label>
         <textarea
           id="description"
@@ -121,7 +154,9 @@ export default function FormPengaduan() {
         />
       </div>
 
-      <div>
+      {/* Foto hanya relevan untuk Komplain — Saran/Kritik masuk tabel feedback
+          yang memang tidak punya relasi lampiran. */}
+      <div hidden={!jadiTiket(jenis)}>
         <p className="t-label mb-2">
           Foto bukti <span className="text-fg-secondary">(opsional, maks {MAKS_FOTO})</span>
         </p>
@@ -135,52 +170,63 @@ export default function FormPengaduan() {
           aria-label="Foto bukti pengaduan"
         />
 
-        {pratinjau.length > 0 && (
-          <ul className="mb-3 grid grid-cols-3 gap-2">
-            {pratinjau.map(({ url }) => (
-              <li key={url} className="relative">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={url}
-                  alt="Pratinjau foto pengaduan"
-                  className="aspect-square w-full rounded-md border border-line object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => hapusFoto(url)}
-                  aria-label="Hapus foto ini"
-                  className="absolute -right-2 -top-2 flex size-9 items-center justify-center rounded-full bg-surface text-fg elev-2"
+        {/* Item 6 — layout animation: grid foto reflow rapi saat foto ditambah/dihapus. */}
+        <AnimatePresence>
+          {pratinjau.length > 0 && (
+            <motion.ul layout className="mb-3 grid grid-cols-3 gap-2">
+              {pratinjau.map(({ url }) => (
+                <motion.li
+                  layout
+                  key={url}
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.85 }}
+                  transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
+                  className="relative"
                 >
-                  <X size={16} aria-hidden />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={url}
+                    alt="Pratinjau foto pengaduan"
+                    className="aspect-square w-full rounded-md border border-line object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => hapusFoto(url)}
+                    aria-label="Hapus foto ini"
+                    className="btn-anim absolute -right-2 -top-2 flex size-9 items-center justify-center rounded-full bg-surface text-fg elev-2"
+                  >
+                    <X size={16} aria-hidden />
+                  </button>
+                </motion.li>
+              ))}
+            </motion.ul>
+          )}
+        </AnimatePresence>
 
         {pratinjau.length < MAKS_FOTO && (
           <div className="flex gap-3">
             <button
               type="button"
               onClick={() => bukaPemilih(true)}
-              className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-md border border-fg px-4 t-label"
+              className="btn-anim flex min-h-12 flex-1 items-center justify-center gap-2 rounded-md border border-fg px-4 t-label"
             >
-              <Camera size={20} aria-hidden />
+              <Camera size={20} className="icon-flow" aria-hidden />
               Kamera
             </button>
             <button
               type="button"
               onClick={() => bukaPemilih(false)}
-              className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-md border border-fg px-4 t-label"
+              className="btn-anim flex min-h-12 flex-1 items-center justify-center gap-2 rounded-md border border-fg px-4 t-label"
             >
-              <ImageIcon size={20} aria-hidden />
+              <ImageIcon size={20} className="icon-flow" aria-hidden />
               Galeri
             </button>
           </div>
         )}
       </div>
 
-      <SubmitButton />
+      <SubmitButton jenis={jenis} />
     </form>
   );
 }
