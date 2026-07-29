@@ -4,20 +4,24 @@ import { useActionState, useRef, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { cekKetersediaan, kirimPendaftaran, type KamarOpsi, type PendaftaranState } from "@/app/pendaftaran/actions";
-import { Stepper } from "@/components/ui/stepper";
+import { FileUploadCard } from "@/components/ui/file-upload-card";
+import { FlowButton } from "@/components/ui/flow-button";
+import { GlassDateField } from "@/components/ui/glass-calendar";
+import { OriginSelect } from "@/components/ui/origin-select";
+import { ProgressIndicator } from "@/components/ui/progress-indicator";
 
 const LANGKAH = ["Ketersediaan", "Biodata", "Dokumen"];
 
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <button
+    <FlowButton
       type="submit"
       disabled={pending}
       className="btn-anim min-h-12 w-full rounded-md bg-action px-6 t-label text-on-action active:bg-action-pressed disabled:bg-sunken disabled:text-fg-disabled"
     >
       {pending ? "Mengirim…" : "Kirim Pendaftaran"}
-    </button>
+    </FlowButton>
   );
 }
 
@@ -72,21 +76,25 @@ function TombolLangkah({
   disabled?: boolean;
 }) {
   return (
-    <button
+    <FlowButton
       type="button"
       onClick={onClick}
       disabled={disabled}
       className="btn-anim min-h-12 w-full rounded-md bg-action px-6 t-label text-on-action active:bg-action-pressed disabled:bg-sunken disabled:text-fg-disabled"
     >
       {label}
-    </button>
+    </FlowButton>
   );
 }
 
 export default function FormPendaftaran({ tipeKamar }: { tipeKamar: string[] }) {
   const [state, action] = useActionState<PendaftaranState, FormData>(kirimPendaftaran, {});
   const formRef = useRef<HTMLFormElement>(null);
+  const biodataRef = useRef<HTMLDivElement>(null);
   const [pekerjaan, setPekerjaan] = useState("Mahasiswi");
+  // Dulu uncontrolled (`defaultValue="1"`); OriginSelect controlled, jadi
+  // nilainya dipegang state dengan default yang sama.
+  const [jumlahGadget, setJumlahGadget] = useState("1");
 
   // Langkah 0 — Ketersediaan: tanggal + tipe kamar dulu, baru kamar spesifik.
   const [langkah, setLangkah] = useState(0);
@@ -118,14 +126,26 @@ export default function FormPendaftaran({ tipeKamar }: { tipeKamar: string[] }) 
   }
 
   function lanjutKeDokumen() {
-    // Field wajib langkah Biodata divalidasi native browser — field langkah
-    // lain (hidden/display:none) otomatis dilewati constraint validation.
-    if (formRef.current?.reportValidity()) setLangkah(2);
+    // `form.reportValidity()` memvalidasi SELURUH form — termasuk input dokumen
+    // milik langkah 3 yang belum diisi. `display:none` tidak membebaskan elemen
+    // dari constraint validation, jadi pemeriksaan itu selalu gagal dan tombol
+    // ini tidak pernah bisa maju. Karena itu validasinya dibatasi ke kontrol di
+    // dalam langkah Biodata saja.
+    const kontrol = Array.from(
+      biodataRef.current?.querySelectorAll('input, select, textarea') ?? [],
+    ) as (HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement)[];
+    for (const el of kontrol) {
+      if (!el.checkValidity()) {
+        el.reportValidity();
+        return;
+      }
+    }
+    setLangkah(2);
   }
 
   return (
     <form ref={formRef} action={action} className="flex flex-col gap-6">
-      <Stepper steps={LANGKAH} currentIndex={langkah} />
+      <ProgressIndicator steps={LANGKAH} currentIndex={langkah} />
 
       {state.error && (
         <p role="alert" className="flex items-start gap-2 rounded-md bg-red-100 p-4 t-body-sm text-red-600">
@@ -145,15 +165,13 @@ export default function FormPendaftaran({ tipeKamar }: { tipeKamar: string[] }) 
             <label htmlFor="tanggal_cek" className="t-label mb-2 block">
               Rencana tanggal masuk
             </label>
-            <input
+            <GlassDateField
               id="tanggal_cek"
-              type="date"
               value={rencanaMasuk}
-              onChange={(e) => {
-                setRencanaMasuk(e.target.value);
+              onChange={(v) => {
+                setRencanaMasuk(v);
                 setSudahCek(false);
               }}
-              className="min-h-12 w-full rounded-md border border-line bg-raised px-4 t-body focus:border-action"
             />
           </div>
 
@@ -161,21 +179,16 @@ export default function FormPendaftaran({ tipeKamar }: { tipeKamar: string[] }) 
             <label htmlFor="tipe_cek" className="t-label mb-2 block">
               Tipe kamar
             </label>
-            <select
+            <OriginSelect
               id="tipe_cek"
+              ariaLabel="Tipe kamar"
               value={tipeDipilih}
-              onChange={(e) => {
-                setTipeDipilih(e.target.value);
+              onChange={(v) => {
+                setTipeDipilih(v);
                 setSudahCek(false);
               }}
-              className="min-h-12 w-full rounded-md border border-line bg-raised px-4 t-body focus:border-action"
-            >
-              {tipeKamar.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
+              options={tipeKamar.map((t) => ({ value: t, label: t }))}
+            />
           </div>
 
           <TombolLangkah
@@ -228,7 +241,7 @@ export default function FormPendaftaran({ tipeKamar }: { tipeKamar: string[] }) 
         <TombolLangkah label="Lanjut ke Biodata" onClick={lanjutKeBiodata} disabled={!noKamar} />
       </div>
 
-      <div className={langkah === 1 ? "flex flex-col gap-5" : "hidden"}>
+      <div ref={biodataRef} className={langkah === 1 ? "flex flex-col gap-5" : "hidden"}>
         {noKamar && rencanaMasuk && (
           <p className="flex items-center gap-2 rounded-md border border-line bg-raised p-4 t-body-sm">
             <CheckCircle2 size={18} className="shrink-0 text-success" aria-hidden />
@@ -255,17 +268,18 @@ export default function FormPendaftaran({ tipeKamar }: { tipeKamar: string[] }) 
             <label htmlFor="pekerjaan" className="t-label mb-2 block">
               Pekerjaan
             </label>
-            <select
+            <OriginSelect
               id="pekerjaan"
               name="pekerjaan"
+              ariaLabel="Pekerjaan"
               required
               value={pekerjaan}
-              onChange={(e) => setPekerjaan(e.target.value)}
-              className="min-h-12 w-full rounded-md border border-line bg-raised px-4 t-body focus:border-action"
-            >
-              <option value="Mahasiswi">Mahasiswi</option>
-              <option value="Karyawati">Karyawati</option>
-            </select>
+              onChange={setPekerjaan}
+              options={[
+                { value: "Mahasiswi", label: "Mahasiswi" },
+                { value: "Karyawati", label: "Karyawati" },
+              ]}
+            />
           </div>
 
           <Teks
@@ -300,19 +314,15 @@ export default function FormPendaftaran({ tipeKamar }: { tipeKamar: string[] }) 
             <label htmlFor="jumlah_gadget" className="t-label mb-2 block">
               Jumlah total gadget
             </label>
-            <select
+            <OriginSelect
               id="jumlah_gadget"
               name="jumlah_gadget"
+              ariaLabel="Jumlah total gadget"
               required
-              defaultValue="1"
-              className="min-h-12 w-full rounded-md border border-line bg-raised px-4 t-body focus:border-action"
-            >
-              {[1, 2, 3, 4, 5].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
+              value={jumlahGadget}
+              onChange={setJumlahGadget}
+              options={[1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: String(n) }))}
+            />
           </div>
           <div>
             <label htmlFor="barang_elektronik" className="t-label mb-2 block">
@@ -349,28 +359,29 @@ export default function FormPendaftaran({ tipeKamar }: { tipeKamar: string[] }) 
             <label htmlFor="scan_identitas" className="t-label mb-2 block">
               Scan identitas (KTP/KTM)
             </label>
-            <input
+            <FileUploadCard
               id="scan_identitas"
               name="scan_identitas"
-              type="file"
               required
               accept="image/jpeg,image/png,image/webp,application/pdf"
-              className="w-full rounded-md border border-line bg-raised p-3 t-body-sm"
+              judul="Scan identitas"
+              deskripsi="KTP atau KTM yang masih berlaku"
+              petunjuk="JPG, PNG, WebP, atau PDF. Maksimal 5 MB."
             />
           </div>
           <div>
             <label htmlFor="scan_bukti_dp" className="t-label mb-2 block">
               Scan bukti pembayaran DP
             </label>
-            <input
+            <FileUploadCard
               id="scan_bukti_dp"
               name="scan_bukti_dp"
-              type="file"
               required
               accept="image/jpeg,image/png,image/webp,application/pdf"
-              className="w-full rounded-md border border-line bg-raised p-3 t-body-sm"
+              judul="Scan bukti pembayaran DP"
+              deskripsi="Bukti transfer uang muka"
+              petunjuk="JPG, PNG, WebP, atau PDF. Maksimal 5 MB."
             />
-            <p className="t-caption mt-1 text-fg-secondary">JPG, PNG, WebP, atau PDF. Maksimal 5 MB.</p>
           </div>
         </Seksi>
 

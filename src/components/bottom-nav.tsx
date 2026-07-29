@@ -19,7 +19,7 @@ export default function BottomNav() {
     // Dock kaca mengambang — bentuk & material meniru dock Mini Apps Ops, warna
     // pakai token Teman Rara sendiri (--raised/--line lewat kelas bg-raised/border-line).
     <nav aria-label="Navigasi utama" className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-3 safe-bottom">
-      <ul className="mx-auto flex w-full max-w-[420px] gap-1 rounded-xl border border-line/70 bg-raised/70 p-1.5 shadow-[var(--elev-3)] backdrop-blur-2xl backdrop-saturate-[1.8]">
+      <ul className="mx-auto flex w-full max-w-[420px] gap-1 rounded-full border border-line/70 bg-raised/10 p-1.5 shadow-[var(--elev-3)] backdrop-blur-2xl backdrop-saturate-[1.8]">
         {tabs.map(({ href, label, icon: Icon }, i) => {
           const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (

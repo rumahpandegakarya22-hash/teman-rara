@@ -4,17 +4,19 @@ import { useActionState, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, Camera, CheckCircle2, ImageIcon, X } from "lucide-react";
 import { unggahBukti, type UploadState } from "@/app/kamar/actions";
+import { UploadCardShell } from "@/components/ui/file-upload-card";
+import { FlowButton } from "@/components/ui/flow-button";
 
 function SubmitButton({ aktif }: { aktif: boolean }) {
   const { pending } = useFormStatus();
   return (
-    <button
+    <FlowButton
       type="submit"
       disabled={!aktif || pending}
       className="btn-anim min-h-12 flex-1 rounded-md bg-action px-6 t-label text-on-action active:bg-action-pressed disabled:bg-sunken disabled:text-fg-disabled"
     >
       {pending ? "Mengirim…" : "Kirim Bukti"}
-    </button>
+    </FlowButton>
   );
 }
 
@@ -37,6 +39,21 @@ export default function UploadBukti({ invoiceSewaId }: { invoiceSewaId: number }
   const pilih = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setPratinjau((lama) => {
+      if (lama) URL.revokeObjectURL(lama);
+      return URL.createObjectURL(file);
+    });
+  };
+
+  // Berkas hasil seret-lepas ditulis balik ke input asli lewat DataTransfer,
+  // supaya tetap ikut FormData saat form disubmit.
+  const jatuhkan = (files: File[]) => {
+    const file = files[0];
+    const input = fileRef.current;
+    if (!file || !input) return;
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
     setPratinjau((lama) => {
       if (lama) URL.revokeObjectURL(lama);
       return URL.createObjectURL(file);
@@ -101,24 +118,31 @@ export default function UploadBukti({ invoiceSewaId }: { invoiceSewaId: number }
             </button>
           </div>
         ) : (
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => bukaPemilih(true)}
-              className="btn-anim flex min-h-12 flex-1 items-center justify-center gap-2 rounded-md border border-fg px-4 t-label"
-            >
-              <Camera size={20} className="icon-flow" aria-hidden />
-              Kamera
-            </button>
-            <button
-              type="button"
-              onClick={() => bukaPemilih(false)}
-              className="btn-anim flex min-h-12 flex-1 items-center justify-center gap-2 rounded-md border border-fg px-4 t-label"
-            >
-              <ImageIcon size={20} className="icon-flow" aria-hidden />
-              Galeri
-            </button>
-          </div>
+          <UploadCardShell
+            judul="Bukti pembayaran"
+            deskripsi="Foto struk atau tangkapan layar transfer"
+            petunjuk="JPG, PNG, atau WebP. Maksimal 5 MB."
+            onDropFiles={jatuhkan}
+          >
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => bukaPemilih(true)}
+                className="btn-anim flex min-h-12 flex-1 items-center justify-center gap-2 rounded-md border border-fg px-4 t-label"
+              >
+                <Camera size={20} className="icon-flow" aria-hidden />
+                Kamera
+              </button>
+              <button
+                type="button"
+                onClick={() => bukaPemilih(false)}
+                className="btn-anim flex min-h-12 flex-1 items-center justify-center gap-2 rounded-md border border-fg px-4 t-label"
+              >
+                <ImageIcon size={20} className="icon-flow" aria-hidden />
+                Galeri
+              </button>
+            </div>
+          </UploadCardShell>
         )}
 
         {pratinjau && (

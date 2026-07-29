@@ -4,8 +4,9 @@ import { motion, type Variants } from "motion/react";
 
 const container: Variants = {
   hidden: {},
-  // Delay per posisi: 0.05s antar item, urut atas ke bawah.
-  show: { transition: { staggerChildren: 0.05, delayChildren: 0.05 } },
+  // Jeda 0.5s sebelum item pertama muncul supaya intro terasa lebih tenang,
+  // lalu 0.05s antar item, urut atas ke bawah.
+  show: { transition: { staggerChildren: 0.05, delayChildren: 0.5 } },
 };
 
 const item: Variants = {

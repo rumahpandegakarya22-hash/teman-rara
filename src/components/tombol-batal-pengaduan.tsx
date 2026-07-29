@@ -5,17 +5,19 @@ import { useFormStatus } from "react-dom";
 import { motion } from "motion/react";
 import { AlertCircle } from "lucide-react";
 import { batalkanPengaduan, type BatalState } from "@/app/pengaduan/actions";
+import { FlowButton } from "@/components/ui/flow-button";
 
 function Tombol() {
   const { pending } = useFormStatus();
   return (
-    <button
+    <FlowButton
       type="submit"
       disabled={pending}
+      rippleClassName="bg-sunken"
       className="btn-anim min-h-12 w-full rounded-md border border-line px-6 t-label text-danger active:bg-sunken disabled:text-fg-disabled"
     >
       {pending ? "Membatalkan…" : "Ya, batalkan"}
-    </button>
+    </FlowButton>
   );
 }
 

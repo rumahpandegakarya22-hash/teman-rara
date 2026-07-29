@@ -40,7 +40,7 @@ export default function AkordionDokumen({
           <motion.div
             layout
             key={d.nama}
-            className="overflow-hidden rounded-lg border border-line bg-raised/80 elev-1"
+            className="overflow-hidden rounded-lg border border-line bg-raised/60 backdrop-blur-2xl elev-1"
           >
             <button
               type="button"

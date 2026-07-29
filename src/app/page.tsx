@@ -7,6 +7,7 @@ import EmptyState from "@/components/empty-state";
 import NotificationOptIn from "@/components/notification-opt-in";
 import AkordionDokumen from "@/components/akordion-dokumen";
 import PengaduanProgress from "@/components/pengaduan-progress";
+import { FlowLink } from "@/components/ui/flow-button";
 import { StaggerContainer, StaggerItem } from "@/components/ui/stagger";
 import UpdateWatcher from "@/components/update-watcher";
 import { getPengumuman } from "@/lib/board";
@@ -116,13 +117,14 @@ export default async function PapanInformasiPage() {
 
               {!login && (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <Link
+                  <FlowLink
                     href="/masuk"
+                    arrows="right"
                     className="btn-anim inline-flex min-h-12 items-center gap-2 rounded-md bg-action px-6 t-label text-on-action elev-2 active:bg-action-pressed"
                   >
                     <LogIn size={20} className="icon-flow" aria-hidden />
                     Masuk untuk membaca
-                  </Link>
+                  </FlowLink>
                 </div>
               )}
             </div>
