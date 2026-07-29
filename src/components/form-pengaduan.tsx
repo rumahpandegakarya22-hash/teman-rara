@@ -14,19 +14,21 @@ import {
   type JenisMasukan,
   type Kategori,
 } from "@/lib/kategori";
+import { FlowButton } from "@/components/ui/flow-button";
+import { UploadCardShell } from "@/components/ui/file-upload-card";
 
 const MAKS_FOTO = 3;
 
 function SubmitButton({ jenis }: { jenis: JenisMasukan }) {
   const { pending } = useFormStatus();
   return (
-    <button
+    <FlowButton
       type="submit"
       disabled={pending}
       className="btn-anim min-h-12 w-full rounded-md bg-action px-6 t-label text-on-action active:bg-action-pressed disabled:bg-sunken disabled:text-fg-disabled"
     >
       {pending ? "Mengirim…" : jadiTiket(jenis) ? "Simpan Pengaduan" : `Kirim ${jenis}`}
-    </button>
+    </FlowButton>
   );
 }
 
@@ -47,12 +49,15 @@ export default function FormPengaduan() {
     input.click();
   };
 
-  const tambahFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const dipilih = Array.from(e.target.files ?? []);
+  const tambahBerkas = (dipilih: File[]) => {
     if (dipilih.length === 0) return;
     setPratinjau((lama) =>
       [...lama, ...dipilih.map((file) => ({ url: URL.createObjectURL(file), file }))].slice(0, MAKS_FOTO),
     );
+  };
+
+  const tambahFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    tambahBerkas(Array.from(e.target.files ?? []));
     e.target.value = "";
   };
 
@@ -205,24 +210,31 @@ export default function FormPengaduan() {
         </AnimatePresence>
 
         {pratinjau.length < MAKS_FOTO && (
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => bukaPemilih(true)}
-              className="btn-anim flex min-h-12 flex-1 items-center justify-center gap-2 rounded-md border border-fg px-4 t-label"
-            >
-              <Camera size={20} className="icon-flow" aria-hidden />
-              Kamera
-            </button>
-            <button
-              type="button"
-              onClick={() => bukaPemilih(false)}
-              className="btn-anim flex min-h-12 flex-1 items-center justify-center gap-2 rounded-md border border-fg px-4 t-label"
-            >
-              <ImageIcon size={20} className="icon-flow" aria-hidden />
-              Galeri
-            </button>
-          </div>
+          <UploadCardShell
+            judul="Foto bukti"
+            deskripsi={`Ambil foto langsung atau pilih dari galeri (maks ${MAKS_FOTO})`}
+            petunjuk="JPG, PNG, atau WebP."
+            onDropFiles={tambahBerkas}
+          >
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => bukaPemilih(true)}
+                className="btn-anim flex min-h-12 flex-1 items-center justify-center gap-2 rounded-md border border-fg px-4 t-label"
+              >
+                <Camera size={20} className="icon-flow" aria-hidden />
+                Kamera
+              </button>
+              <button
+                type="button"
+                onClick={() => bukaPemilih(false)}
+                className="btn-anim flex min-h-12 flex-1 items-center justify-center gap-2 rounded-md border border-fg px-4 t-label"
+              >
+                <ImageIcon size={20} className="icon-flow" aria-hidden />
+                Galeri
+              </button>
+            </div>
+          </UploadCardShell>
         )}
       </div>
 

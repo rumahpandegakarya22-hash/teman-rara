@@ -4,17 +4,18 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, ShieldCheck } from "lucide-react";
 import { klaimAkun, type OnboardingState } from "@/app/onboarding/actions";
+import { FlowButton } from "@/components/ui/flow-button";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <button
+    <FlowButton
       type="submit"
       disabled={pending}
       className="btn-anim min-h-12 w-full rounded-md bg-action px-6 t-label text-on-action active:bg-action-pressed disabled:bg-sunken disabled:text-fg-disabled"
     >
       {pending ? "Memeriksa…" : "Hubungkan Akun"}
-    </button>
+    </FlowButton>
   );
 }
 

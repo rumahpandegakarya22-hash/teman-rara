@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft, DoorClosed } from "lucide-react";
 import EmptyState from "@/components/empty-state";
 import FormPendaftaran from "@/components/form-pendaftaran";
+import GerbangPendaftaran from "@/components/gerbang-pendaftaran";
 import { getTipeKamarTersedia } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +39,9 @@ export default async function PendaftaranPage() {
           description="Hubungi pengelola untuk masuk daftar tunggu."
         />
       ) : (
-        <FormPendaftaran tipeKamar={tipeKamar} />
+        <GerbangPendaftaran>
+          <FormPendaftaran tipeKamar={tipeKamar} />
+        </GerbangPendaftaran>
       )}
     </main>
   );

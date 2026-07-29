@@ -4,6 +4,7 @@ import { ChevronRight, MessageSquareWarning, Plus } from "lucide-react";
 import EmptyState from "@/components/empty-state";
 import SewaBerakhir from "@/components/sewa-berakhir";
 import StatusPengaduan from "@/components/status-pengaduan";
+import { FlowLink } from "@/components/ui/flow-button";
 import { StaggerContainer, StaggerItem } from "@/components/ui/stagger";
 import { formatTanggal } from "@/lib/format";
 import { wajibMasuk } from "@/lib/guard";
@@ -117,14 +118,15 @@ export default async function PengaduanPage({
       )}
     </StaggerContainer>
 
-      <Link
+      <FlowLink
         href="/pengaduan/baru"
         aria-label="Buat pengaduan baru"
+        arrows="right"
         className="btn-anim fixed bottom-[88px] right-4 z-30 flex min-h-14 items-center gap-2 rounded-full bg-action px-5 t-label text-on-action elev-3 active:bg-action-pressed"
       >
         <Plus size={24} className="icon-flow" aria-hidden />
         Pengaduan Baru
-      </Link>
+      </FlowLink>
     </main>
   );
 }
