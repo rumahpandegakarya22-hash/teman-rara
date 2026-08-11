@@ -1,6 +1,5 @@
 import "server-only";
-import { Readable } from "node:stream";
-import { driveClient, driveSiap, withRetry } from "./google";
+import { driveSiap, getAccessToken, withRetry } from "./google";
 
 export const TIPE_DIIZINKAN = ["image/jpeg", "image/png", "application/pdf"] as const;
 export const UKURAN_MAKS = 2 * 1024 * 1024; // 2 MB
@@ -50,32 +49,70 @@ export async function simpanGambar(file: File, jenis: JenisBerkas): Promise<stri
 
   const ext = file.type.split("/")[1].replace("jpeg", "jpg");
   const nama = `${jenis}-${crypto.randomUUID()}.${ext}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
+  const isi = new Uint8Array(await file.arrayBuffer());
 
-  const res = await withRetry(() =>
-    driveClient().files.create({
-      requestBody: { name: nama, parents: [folderId] },
-      media: { mimeType: file.type, body: Readable.from(buffer) },
-      fields: "id",
-      supportsAllDrives: true, // folder berada di Shared Drive
-    }),
+  // Upload multipart/related manual: bagian pertama metadata JSON, bagian kedua
+  // byte berkas. Disusun sebagai satu Uint8Array supaya bisa dikirim `fetch`.
+  const boundary = `tr${crypto.randomUUID().replace(/-/g, "")}`;
+  const enc = new TextEncoder();
+  const pembuka = enc.encode(
+    `--${boundary}\r\n` +
+      `Content-Type: application/json; charset=UTF-8\r\n\r\n` +
+      `${JSON.stringify({ name: nama, parents: [folderId] })}\r\n` +
+      `--${boundary}\r\n` +
+      `Content-Type: ${file.type}\r\n\r\n`,
   );
+  const penutup = enc.encode(`\r\n--${boundary}--\r\n`);
+  const body = new Uint8Array(pembuka.length + isi.length + penutup.length);
+  body.set(pembuka, 0);
+  body.set(isi, pembuka.length);
+  body.set(penutup, pembuka.length + isi.length);
 
-  const fileId = res.data.id;
-  if (!fileId) throw new Error("Drive tidak mengembalikan fileId");
-  return `/api/berkas/${fileId}`;
+  return withRetry(async () => {
+    const token = await getAccessToken();
+    const res = await fetch(
+      "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id&supportsAllDrives=true",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": `multipart/related; boundary=${boundary}`,
+        },
+        body,
+      },
+    );
+    if (!res.ok) {
+      const teks = await res.text().catch(() => "");
+      throw Object.assign(new Error(`Drive upload gagal (${res.status}): ${teks.slice(0, 200)}`), {
+        status: res.status,
+      });
+    }
+    const data = (await res.json()) as { id?: string };
+    if (!data.id) throw new Error("Drive tidak mengembalikan fileId");
+    return `/api/berkas/${data.id}`;
+  });
 }
 
 /** Ambil isi berkas dari Drive sebagai buffer + mime. Dipakai route penyaji. */
 export async function ambilGambar(fileId: string): Promise<{ buffer: Buffer; mime: string }> {
-  const meta = await withRetry(() =>
-    driveClient().files.get({ fileId, fields: "mimeType", supportsAllDrives: true }),
-  );
-  const res = await withRetry(() =>
-    driveClient().files.get({ fileId, alt: "media", supportsAllDrives: true }, { responseType: "arraybuffer" }),
-  );
-  return {
-    buffer: Buffer.from(res.data as ArrayBuffer),
-    mime: meta.data.mimeType || "application/octet-stream",
-  };
+  const id = encodeURIComponent(fileId);
+  return withRetry(async () => {
+    const token = await getAccessToken();
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const [metaRes, mediaRes] = await Promise.all([
+      fetch(`https://www.googleapis.com/drive/v3/files/${id}?fields=mimeType&supportsAllDrives=true`, {
+        headers: auth,
+      }),
+      fetch(`https://www.googleapis.com/drive/v3/files/${id}?alt=media&supportsAllDrives=true`, {
+        headers: auth,
+      }),
+    ]);
+    if (!metaRes.ok) throw Object.assign(new Error(`Drive meta gagal (${metaRes.status})`), { status: metaRes.status });
+    if (!mediaRes.ok) throw Object.assign(new Error(`Drive media gagal (${mediaRes.status})`), { status: mediaRes.status });
+
+    const meta = (await metaRes.json()) as { mimeType?: string };
+    const buffer = Buffer.from(await mediaRes.arrayBuffer());
+    return { buffer, mime: meta.mimeType || "application/octet-stream" };
+  });
 }

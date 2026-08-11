@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Poppins:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 /* Token semantik Teman Rara v1.0 — komponen tidak pernah memakai hex mentah. */
@@ -55,6 +56,8 @@
 }
 
 :root {
+  --font-lora: 'Lora';
+  --font-poppins: 'Poppins';
   --surface: #f8f6f2;
   --raised: #fbfaf7;
   --sunken: #e8dfd5;

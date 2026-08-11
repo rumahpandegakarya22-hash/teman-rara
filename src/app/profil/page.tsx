@@ -53,7 +53,6 @@ export default async function ProfilPage() {
           <h1 className="t-h2 truncate">{penghuni.nama}</h1>
           <p className="t-body-sm text-fg-secondary">
             Kamar {penghuni.no_kamar}
-            {penghuni.tanggal_masuk && ` · sejak ${penghuni.tanggal_masuk}`}
           </p>
         </div>
       </header>

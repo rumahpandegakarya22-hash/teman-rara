@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BedDouble, ReceiptText, Sofa } from "lucide-react";
+import { ArrowLeftRight, BedDouble, ChevronRight, LogOut, ReceiptText, Sofa } from "lucide-react";
 import DetailTagihan from "@/components/detail-tagihan";
 import KalkulatorSewa from "@/components/kalkulator-sewa";
 import RiwayatPembayaranSoon from "@/components/riwayat-pembayaran-soon";
@@ -136,6 +137,36 @@ export default async function KamarPage() {
 
       <StaggerItem>
         <RiwayatPembayaranSoon />
+      </StaggerItem>
+
+      <StaggerItem>
+      <section aria-labelledby="judul-pengajuan">
+        <h2 id="judul-pengajuan" className="t-h3 mb-3">Pengajuan</h2>
+        <div className="flex flex-col gap-3">
+          <Link
+            href="/pengajuan/checkout"
+            className="btn-anim flex min-h-12 items-center gap-3 rounded-lg border border-line bg-raised p-5 elev-1"
+          >
+            <LogOut size={20} className="shrink-0 text-action" aria-hidden />
+            <span className="flex-1">
+              <span className="t-body block font-medium">Pengajuan Checkout</span>
+              <span className="t-caption text-fg-secondary">Ajukan rencana keluar dari kamar</span>
+            </span>
+            <ChevronRight size={20} className="icon-flow shrink-0 text-fg-secondary" aria-hidden />
+          </Link>
+          <Link
+            href="/pengajuan/pindah"
+            className="btn-anim flex min-h-12 items-center gap-3 rounded-lg border border-line bg-raised p-5 elev-1"
+          >
+            <ArrowLeftRight size={20} className="shrink-0 text-action" aria-hidden />
+            <span className="flex-1">
+              <span className="t-body block font-medium">Pindah Kamar</span>
+              <span className="t-caption text-fg-secondary">Ajukan pindah ke kamar kosong lain</span>
+            </span>
+            <ChevronRight size={20} className="icon-flow shrink-0 text-fg-secondary" aria-hidden />
+          </Link>
+        </div>
+      </section>
       </StaggerItem>
 
       {riwayat.length > 0 && (

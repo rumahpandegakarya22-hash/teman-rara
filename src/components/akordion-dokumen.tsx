@@ -1,15 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronDown, ExternalLink, FileText } from "lucide-react";
+import { ChevronDown, ExternalLink, FileText, Loader2 } from "lucide-react";
 
 type Dokumen = { nama: string; judul: string };
 
+type StatusPdf = "idle" | "memuat" | "siap" | "gagal";
+
 /**
- * Daftar dokumen PDF sebagai accordion. Item 6 — layout animation: tinggi
- * konten dan reflow antar-item dianimasikan lewat prop `layout`, bukan
- * <details> bawaan yang membuka/menutup instan.
+ * Untuk dokumen internal: PDF difetch client-side dulu (credentials: 'include'
+ * agar cookie Clerk ikut), lalu dimasukkan ke iframe via blob URL.
+ * Pola langsung <iframe src="/api/dokumen/..."> tidak bisa menampilkan PDF karena
+ * browser modern menolak embed PDF dari API route yang mengembalikan stream binary
+ * (bukan file statis).
  */
 export default function AkordionDokumen({
   dokumen,
@@ -19,23 +23,54 @@ export default function AkordionDokumen({
   internal: boolean;
 }) {
   const [terbuka, setTerbuka] = useState<Set<string>>(new Set());
+  const [status, setStatus] = useState<Record<string, StatusPdf>>({});
+  const blobUrls = useRef<Record<string, string>>({});
 
-  const srcDari = (nama: string) => (internal ? `/api/dokumen/${nama}` : `/peraturan/${nama}.pdf`);
+  // Bersihkan blob URL saat komponen unmount
+  useEffect(() => {
+    const urls = blobUrls.current;
+    return () => {
+      Object.values(urls).forEach((u) => URL.revokeObjectURL(u));
+    };
+  }, []);
+
+  const srcDari = (nama: string) =>
+    internal ? `/api/dokumen/${nama}` : `/peraturan/${nama}.pdf`;
+
+  const muatPdf = async (nama: string) => {
+    if (status[nama] && status[nama] !== "idle") return;
+    setStatus((s) => ({ ...s, [nama]: "memuat" }));
+    try {
+      const res = await fetch(srcDari(nama), { credentials: "include" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      blobUrls.current[nama] = URL.createObjectURL(blob);
+      setStatus((s) => ({ ...s, [nama]: "siap" }));
+    } catch {
+      setStatus((s) => ({ ...s, [nama]: "gagal" }));
+    }
+  };
 
   const toggle = (nama: string) => {
-    setTerbuka((lama) => {
-      const baru = new Set(lama);
-      if (baru.has(nama)) baru.delete(nama);
+    const sudahBuka = terbuka.has(nama);
+    setTerbuka((prev) => {
+      const baru = new Set(prev);
+      if (sudahBuka) baru.delete(nama);
       else baru.add(nama);
       return baru;
     });
+    if (!sudahBuka && internal && !status[nama]) {
+      muatPdf(nama);
+    }
   };
 
   return (
     <motion.div layout className="flex flex-col gap-3">
       {dokumen.map((d) => {
-        const src = srcDari(d.nama);
         const buka = terbuka.has(d.nama);
+        const st = status[d.nama] ?? "idle";
+        const blobUrl = blobUrls.current[d.nama];
+
         return (
           <motion.div
             layout
@@ -71,7 +106,7 @@ export default function AkordionDokumen({
                 >
                   <div className="p-4">
                     <a
-                      href={src}
+                      href={srcDari(d.nama)}
                       target="_blank"
                       rel="noreferrer"
                       className="btn-anim mb-3 inline-flex min-h-12 items-center gap-1.5 t-label text-action"
@@ -79,11 +114,31 @@ export default function AkordionDokumen({
                       <ExternalLink size={18} className="icon-flow" aria-hidden />
                       Buka di tab baru
                     </a>
-                    <iframe
-                      src={src}
-                      title={d.judul}
-                      className="h-[70vh] w-full rounded-md border border-line bg-surface"
-                    />
+
+                    {internal ? (
+                      st === "memuat" ? (
+                        <div className="flex h-40 items-center justify-center rounded-md border border-line bg-surface">
+                          <Loader2 size={24} className="animate-spin text-fg-secondary" aria-hidden />
+                          <span className="sr-only">Memuat dokumen…</span>
+                        </div>
+                      ) : st === "gagal" ? (
+                        <p className="t-body-sm text-danger">
+                          Gagal memuat pratinjau. Gunakan tombol &ldquo;Buka di tab baru&rdquo; di atas.
+                        </p>
+                      ) : st === "siap" && blobUrl ? (
+                        <iframe
+                          src={blobUrl}
+                          title={d.judul}
+                          className="h-[70vh] w-full rounded-md border border-line bg-surface"
+                        />
+                      ) : null
+                    ) : (
+                      <iframe
+                        src={srcDari(d.nama)}
+                        title={d.judul}
+                        className="h-[70vh] w-full rounded-md border border-line bg-surface"
+                      />
+                    )}
                   </div>
                 </motion.div>
               )}

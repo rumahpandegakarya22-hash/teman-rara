@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { and, asc, eq, inArray, ne } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { activeTenant, booking, kamar, trPendaftaran } from "@/db/schema";
@@ -11,52 +11,70 @@ import { simpanGambar, validasiDokumen } from "@/lib/storage";
 
 export type KamarOpsi = { no_kamar: number; tipe_kamar: string | null };
 
+// Booking yang "menahan" kamar dari calon lain: penghuni aktif (Check-in),
+// sudah dikonfirmasi, atau pendaftaran yang masih diproses (Pending — termasuk
+// pendaftaran Teman Rara sendiri). Dibandingkan case-insensitive.
+const STATUS_MENAHAN = new Set(["check-in", "konfirmasi", "pending"]);
+// Jeda aman setelah tanggal keluar penghuni lama sebelum penghuni baru masuk.
+const BUFFER_HARI = 7;
+
+function tambahHari(tanggal: string, n: number): string {
+  const t = new Date(`${tanggal}T00:00:00Z`);
+  t.setUTCDate(t.getUTCDate() + n);
+  return t.toISOString().slice(0, 10);
+}
+
 /**
- * Kamar tersedia pada tanggal tertentu, bukan cuma "kosong sekarang".
+ * Kamar yang tersedia untuk rencana masuk `tanggal`.
  *
- * Kamar dianggap tersedia kalau:
- *  - tidak ada baris active_tenant untuk kamar itu, ATAU
- *  - penghuni aktifnya sudah/akan checkout (booking.tgl_keluar_est) pada atau
- *    sebelum tanggal rencana masuk pendaftar baru.
+ * Aturan:
+ *  - Kamar tanpa active_tenant DAN tanpa booking penahan (Check-in/Konfirmasi/
+ *    Pending) → tersedia kapan pun.
+ *  - Kamar berpenghuni → tersedia hanya bila booking non-checkout terakhir
+ *    penghuninya punya tgl_keluar_est yang (a) BELUM lewat (>= hari ini; kalau
+ *    sudah lewat berarti estimasi basi karena penghuni perpanjang, jadi kamar
+ *    dianggap masih terisi) DAN (b) tgl_keluar_est + BUFFER_HARI <= tanggal.
  *
- * Booking penghuni aktif ditemukan lewat active_tenant.id_penghuni →
- * booking.id_penghuni (booking terbaru yang belum berstatus 'Check-out'),
- * pola yang sama dipakai submitCheckout di kost-tiga-dara (cari booking by
- * id_penghuni, urutkan tanggal_booking terbaru). Kalau id_penghuni penghuni
- * aktif kosong atau tidak ada booking yang cocok, kamar dianggap TIDAK
- * tersedia (aman: tidak bisa memverifikasi tanggal keluarnya).
+ * Menahan pakai active_tenant sebagai sumber kebenaran "sedang dihuni"; trigger
+ * checkout di DB menghapus barisnya begitu penghuni keluar.
  */
 async function getKamarTersedia(tanggal: string, tipeKamar?: string): Promise<KamarOpsi[]> {
-  const [semuaKamar, semuaPenghuniAktif] = await Promise.all([
+  const hariIni = new Date().toISOString().slice(0, 10);
+
+  const [semuaKamar, penghuniAktif, semuaBooking] = await Promise.all([
     db
       .select({ id_kamar: kamar.id_kamar, no_kamar: kamar.no_kamar, tipe_kamar: kamar.tipe_kamar })
       .from(kamar)
       .where(tipeKamar ? eq(kamar.tipe_kamar, tipeKamar) : undefined)
       .orderBy(asc(kamar.no_kamar)),
     db.select({ kamar_id: activeTenant.kamar_id, id_penghuni: activeTenant.id_penghuni }).from(activeTenant),
+    db
+      .select({
+        id_penghuni: booking.id_penghuni,
+        kamar_no: booking.kamar_no,
+        status_booking: booking.status_booking,
+        tgl_keluar_est: booking.tgl_keluar_est,
+        tanggal_booking: booking.tanggal_booking,
+      })
+      .from(booking),
   ]);
 
   const penghuniPerKamar = new Map(
-    semuaPenghuniAktif.filter((p) => p.id_penghuni).map((p) => [p.kamar_id, p.id_penghuni as string]),
+    penghuniAktif.filter((p) => p.id_penghuni).map((p) => [p.kamar_id, p.id_penghuni as string]),
   );
-  if (penghuniPerKamar.size === 0) {
-    return semuaKamar.map(({ no_kamar, tipe_kamar }) => ({ no_kamar, tipe_kamar }));
-  }
 
-  const idPenghuniList = [...new Set(penghuniPerKamar.values())];
-  const bookingAktif = await db
-    .select({
-      id_penghuni: booking.id_penghuni,
-      tgl_keluar_est: booking.tgl_keluar_est,
-      tanggal_booking: booking.tanggal_booking,
-    })
-    .from(booking)
-    .where(and(inArray(booking.id_penghuni, idPenghuniList), ne(booking.status_booking, "Check-out")));
+  // Kamar yang ditahan booking Check-in/Konfirmasi/Pending (dipesan orang lain).
+  const kamarDitahan = new Set(
+    semuaBooking
+      .filter((b) => STATUS_MENAHAN.has(String(b.status_booking ?? "").toLowerCase().trim()))
+      .map((b) => String(b.kamar_no)),
+  );
 
-  // Ambil booking terbaru per id_penghuni (bisa lebih dari satu riwayat booking).
+  // Booking non-checkout terbaru per penghuni → sumber tgl_keluar_est.
   const bookingTerbaru = new Map<string, { tgl_keluar_est: string | null; tanggal_booking: string | null }>();
-  for (const b of bookingAktif) {
+  for (const b of semuaBooking) {
     if (!b.id_penghuni) continue;
+    if (String(b.status_booking ?? "").toLowerCase().trim() === "check-out") continue;
     const ada = bookingTerbaru.get(b.id_penghuni);
     if (!ada || (b.tanggal_booking ?? "") > (ada.tanggal_booking ?? "")) {
       bookingTerbaru.set(b.id_penghuni, b);
@@ -66,9 +84,15 @@ async function getKamarTersedia(tanggal: string, tipeKamar?: string): Promise<Ka
   return semuaKamar
     .filter((k) => {
       const idPenghuni = penghuniPerKamar.get(k.id_kamar);
-      if (!idPenghuni) return true; // tidak ada active_tenant sama sekali
-      const bk = bookingTerbaru.get(idPenghuni);
-      return !!bk?.tgl_keluar_est && bk.tgl_keluar_est <= tanggal;
+      if (!idPenghuni) {
+        // Kosong sekarang: tersedia asal tidak dipesan booking penahan.
+        return !kamarDitahan.has(String(k.no_kamar));
+      }
+      // Terisi: hanya tersedia bila penghuninya punya rencana keluar yang belum
+      // basi, dan tanggal masuk pendaftar >= tgl keluar + buffer.
+      const est = bookingTerbaru.get(idPenghuni)?.tgl_keluar_est;
+      if (!est || est < hariIni) return false;
+      return tambahHari(est, BUFFER_HARI) <= tanggal;
     })
     .map(({ no_kamar, tipe_kamar }) => ({ no_kamar, tipe_kamar }));
 }
@@ -102,8 +126,8 @@ const schema = z
   .object({
     email: z.email("Alamat email tidak valid").max(150),
     nama_lengkap: z.string().trim().min(2, "Nama lengkap wajib diisi").max(100),
-    nama_panggilan: z.string().trim().max(50).optional().or(z.literal("")),
-    asal_daerah: z.string().trim().max(100).optional().or(z.literal("")),
+    nama_panggilan: z.string().trim().min(1, "Nama panggilan wajib diisi").max(50),
+    asal_daerah: z.string().trim().min(2, "Asal daerah wajib diisi").max(100),
     no_hp: hp,
     no_kamar: z.string().trim().min(1, "Nomor kamar wajib dipilih").max(10),
     rencana_masuk: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Tanggal rencana masuk tidak valid"),
@@ -117,7 +141,7 @@ const schema = z
     darurat2_nomor: z.string().trim().optional().or(z.literal("")),
     darurat2_relasi: z.string().trim().max(50).optional().or(z.literal("")),
     jumlah_gadget: z.coerce.number().int().min(1).max(5),
-    barang_elektronik: z.string().trim().max(500).optional().or(z.literal("")),
+    barang_elektronik: z.string().trim().min(1, "Barang elektronik wajib diisi (tulis '-' bila tidak ada)").max(500),
   })
   .refine((d) => d.pekerjaan !== "Mahasiswi" || (d.program_studi ?? "").trim().length > 1, {
     message: "Program studi wajib diisi untuk mahasiswi",
@@ -230,7 +254,15 @@ export async function kirimPendaftaran(
         url_bukti_dp: urlBuktiDp,
       });
     });
-  } catch {
+  } catch (e) {
+    // Dulu error asli ditelan diam-diam sehingga penyebab (mis. token Google
+    // Drive kedaluwarsa) tidak pernah kelihatan di log. Sekarang dicatat, dan
+    // kegagalan unggah dokumen dibedakan dari kegagalan simpan data.
+    console.error("[pendaftaran] gagal:", e);
+    const pesan = e instanceof Error ? e.message : "";
+    if (/drive|oauth|token|invalid_grant|folder/i.test(pesan)) {
+      return { error: "Unggah dokumen gagal (kendala penyimpanan). Coba lagi; kalau tetap gagal, hubungi pengelola." };
+    }
     return { error: "Gagal menyimpan pendaftaran. Coba lagi sebentar." };
   }
 

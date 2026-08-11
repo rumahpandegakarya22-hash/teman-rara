@@ -350,6 +350,62 @@ export const trPendaftaran = sqliteTable(
 );
 
 /**
+ * Pengajuan checkout mandiri dari penghuni. Baris = PERMINTAAN, bukan eksekusi:
+ * pengelola yang menjalankan checkout sebenarnya lewat Mini App Ops saat "acc".
+ */
+export const trCheckoutRequest = sqliteTable(
+  "tr_checkout_request",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id_penghuni: text("id_penghuni")
+      .notNull()
+      .references(() => occupancyHistory.id_penghuni),
+    no_kamar: text("no_kamar").notNull(),
+    tanggal_checkout: text("tanggal_checkout").notNull(),
+    alasan: text("alasan").notNull(),
+    catatan: text("catatan"),
+    status: text("status", {
+      enum: ["Menunggu", "Disetujui", "Ditolak", "Dibatalkan", "Selesai"],
+    })
+      .notNull()
+      .default("Menunggu"),
+    response_note: text("response_note"),
+    processed_by: text("processed_by"),
+    processed_at: text("processed_at"),
+    created_at: text("created_at").notNull().default(now),
+    updated_at: text("updated_at").notNull().default(now),
+  },
+  (t) => [index("idx_tr_checkout_req_penghuni").on(t.id_penghuni, t.created_at)],
+);
+
+/** Pengajuan pindah kamar mandiri. Sama polanya dengan checkout request. */
+export const trPindahRequest = sqliteTable(
+  "tr_pindah_request",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id_penghuni: text("id_penghuni")
+      .notNull()
+      .references(() => occupancyHistory.id_penghuni),
+    no_kamar_lama: text("no_kamar_lama").notNull(),
+    no_kamar_baru: text("no_kamar_baru").notNull(),
+    tanggal: text("tanggal").notNull(),
+    alasan: text("alasan").notNull(),
+    catatan: text("catatan"),
+    status: text("status", {
+      enum: ["Menunggu", "Disetujui", "Ditolak", "Dibatalkan", "Selesai"],
+    })
+      .notNull()
+      .default("Menunggu"),
+    response_note: text("response_note"),
+    processed_by: text("processed_by"),
+    processed_at: text("processed_at"),
+    created_at: text("created_at").notNull().default(now),
+    updated_at: text("updated_at").notNull().default(now),
+  },
+  (t) => [index("idx_tr_pindah_req_penghuni").on(t.id_penghuni, t.created_at)],
+);
+
+/**
  * Guard idempotensi pengingat jatuh tempo. Satu baris = satu reminder yang
  * sudah terkirim untuk kombinasi (invoice, offset_hari) tertentu. Cron boleh
  * jalan sesering apa pun (misal tiap 15 menit) — insert kedua untuk pasangan

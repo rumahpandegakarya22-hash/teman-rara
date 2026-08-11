@@ -1,21 +1,12 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import { idID } from "@clerk/localizations";
 import type { Metadata, Viewport } from "next";
-import { Lora, Poppins } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/bottom-nav";
 import InstallPrompt from "@/components/install-prompt";
 import MotionProvider from "@/components/motion-provider";
 import PageTransition from "@/components/page-transition";
 import ServiceWorkerRegistrar from "@/components/service-worker-registrar";
-
-const lora = Lora({ subsets: ["latin"], variable: "--font-lora", display: "swap" });
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-poppins",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Teman Rara — Kost Tiga Dara",
@@ -53,7 +44,7 @@ const clerkVariables = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className={`${lora.variable} ${poppins.variable}`}>
+    <html lang="id">
       <body>
         <ClerkProvider localization={idID} appearance={{ variables: clerkVariables }}>
           <MotionProvider>

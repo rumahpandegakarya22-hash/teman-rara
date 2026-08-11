@@ -29,6 +29,7 @@ function Teks({
   nama,
   label,
   wajib,
+  opsional,
   tipe = "text",
   bantuan,
   ...rest
@@ -36,13 +37,16 @@ function Teks({
   nama: string;
   label: string;
   wajib?: boolean;
+  // Tanda "(opsional)" sekarang opt-in, bukan turunan dari `!wajib`. Hanya
+  // Kontak Darurat 2 yang menandainya; field lain tanpa tanda meski tak wajib.
+  opsional?: boolean;
   tipe?: string;
   bantuan?: string;
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div>
       <label htmlFor={nama} className="t-label mb-2 block">
-        {label} {!wajib && <span className="text-fg-secondary">(opsional)</span>}
+        {label} {opsional && <span className="text-fg-secondary">(opsional)</span>}
       </label>
       <input
         id={nama}
@@ -251,7 +255,7 @@ export default function FormPendaftaran({ tipeKamar }: { tipeKamar: string[] }) 
 
         <Seksi judul="Data Diri">
           <Teks nama="nama_lengkap" label="Nama lengkap" wajib autoComplete="name" />
-          <Teks nama="nama_panggilan" label="Nama panggilan" />
+          <Teks nama="nama_panggilan" label="Nama panggilan" wajib />
           <Teks nama="email" label="Email" wajib tipe="email" autoComplete="email" />
           <Teks
             nama="no_hp"
@@ -262,7 +266,7 @@ export default function FormPendaftaran({ tipeKamar }: { tipeKamar: string[] }) 
             placeholder="628xxxxxxxxxx"
             bantuan="Boleh ditulis 08xx, otomatis disimpan sebagai 62xx."
           />
-          <Teks nama="asal_daerah" label="Asal daerah" />
+          <Teks nama="asal_daerah" label="Asal daerah" wajib />
 
           <div>
             <label htmlFor="pekerjaan" className="t-label mb-2 block">
@@ -304,9 +308,9 @@ export default function FormPendaftaran({ tipeKamar }: { tipeKamar: string[] }) 
         </Seksi>
 
         <Seksi judul="Kontak Darurat 2">
-          <Teks nama="darurat2_nama" label="Nama" />
-          <Teks nama="darurat2_nomor" label="Nomor HP" tipe="tel" inputMode="tel" />
-          <Teks nama="darurat2_relasi" label="Relasi" />
+          <Teks nama="darurat2_nama" label="Nama" opsional />
+          <Teks nama="darurat2_nomor" label="Nomor HP" tipe="tel" inputMode="tel" opsional />
+          <Teks nama="darurat2_relasi" label="Relasi" opsional />
         </Seksi>
 
         <Seksi judul="Barang Bawaan">
@@ -326,14 +330,15 @@ export default function FormPendaftaran({ tipeKamar }: { tipeKamar: string[] }) 
           </div>
           <div>
             <label htmlFor="barang_elektronik" className="t-label mb-2 block">
-              Barang elektronik tambahan <span className="text-fg-secondary">(opsional)</span>
+              Barang elektronik tambahan
             </label>
             <textarea
               id="barang_elektronik"
               name="barang_elektronik"
+              required
               rows={3}
               maxLength={500}
-              placeholder="Selain kipas angin, HP, laptop, tablet/iPad, rice cooker."
+              placeholder="Selain kipas angin, HP, laptop, tablet/iPad, rice cooker. Tulis '-' bila tidak ada."
               className="w-full rounded-md border border-line bg-raised p-4 t-body focus:border-action"
             />
           </div>

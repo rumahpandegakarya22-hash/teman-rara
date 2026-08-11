@@ -51,6 +51,31 @@ export async function kirimKeSemua(isi: IsiNotifikasi) {
   return kirimKeBanyak(langganan, isi);
 }
 
+/**
+ * Notifikasi ke pengelola. Teman Rara belum punya kanal push khusus pengelola
+ * (push terikat id_penghuni; pengelola bekerja di Mini App Ops yang instance
+ * Clerk-nya beda). Sebagai jembatan sementara, kirim ke id_penghuni yang
+ * didaftarkan di env `PENGELOLA_ID_PENGHUNI` (dipisah koma) — mis. akun uji
+ * pemilik. Saat integrasi Ops siap, ganti isi fungsi ini dengan kanal Ops
+ * TANPA mengubah pemanggilnya.
+ */
+export async function kirimKePengelola(isi: IsiNotifikasi) {
+  const daftar = (process.env.PENGELOLA_ID_PENGHUNI ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (daftar.length === 0) {
+    console.warn("[push] PENGELOLA_ID_PENGHUNI belum diset — notifikasi pengelola dilewati:", isi.title);
+    return { terkirim: 0, dilewati: "pengelola belum dikonfigurasi" };
+  }
+  let terkirim = 0;
+  for (const id of daftar) {
+    const r = await kirimKePenghuni(id, isi);
+    terkirim += r.terkirim ?? 0;
+  }
+  return { terkirim };
+}
+
 async function kirimKeBanyak(
   langganan: { endpoint: string; p256dh: string; auth: string }[],
   isi: IsiNotifikasi,
