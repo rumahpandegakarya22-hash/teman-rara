@@ -50,7 +50,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ nama: s
         "Content-Disposition": "inline",
       },
     });
-  } catch {
+  } catch (e) {
+    // Log supaya kegagalan ambil berkas dari Drive (mis. kredensial OAuth belum
+    // di-set di produksi) bisa dilacak lewat `wrangler tail`, bukan cuma 404 buta.
+    console.error("Gagal mengambil berkas Drive:", fileId, e);
     return NextResponse.json({ error: "Berkas tidak ditemukan" }, { status: 404 });
   }
 }

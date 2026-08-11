@@ -2,17 +2,20 @@ import "server-only";
 import { Readable } from "node:stream";
 import { driveClient, driveSiap, withRetry } from "./google";
 
-export const TIPE_DIIZINKAN = ["image/jpeg", "image/png", "application/pdf"] as const;
-export const UKURAN_MAKS = 2 * 1024 * 1024; // 2 MB
+// WebP ikut diizinkan karena UI (accept + teks bantuan di upload-bukti) memang
+// menawarkannya; sebelumnya validasi server menolak WebP sehingga unggahan selalu
+// gagal walau pengguna memilih file yang "diperbolehkan" di layar.
+export const TIPE_DIIZINKAN = ["image/jpeg", "image/png", "image/webp", "application/pdf"] as const;
+export const UKURAN_MAKS = 5 * 1024 * 1024; // 5 MB — samakan dengan teks di UI.
 
 export type HasilValidasi = { ok: true } | { ok: false; pesan: string };
 
 /** Validasi server-side. Jangan pernah percaya atribut `accept` di input file. */
 export function validasiGambar(file: File): HasilValidasi {
   if (file.size === 0) return { ok: false, pesan: "Berkas kosong." };
-  if (file.size > UKURAN_MAKS) return { ok: false, pesan: "Ukuran file maksimal 2 MB." };
+  if (file.size > UKURAN_MAKS) return { ok: false, pesan: "Ukuran file maksimal 5 MB." };
   if (!TIPE_DIIZINKAN.includes(file.type as (typeof TIPE_DIIZINKAN)[number])) {
-    return { ok: false, pesan: "Format harus JPG, PNG, atau PDF." };
+    return { ok: false, pesan: "Format harus JPG, PNG, WebP, atau PDF." };
   }
   return { ok: true };
 }
@@ -21,8 +24,7 @@ export function validasiGambar(file: File): HasilValidasi {
 export function validasiDokumen(file: File): HasilValidasi {
   if (file.size === 0) return { ok: false, pesan: "Berkas kosong." };
   if (file.size > UKURAN_MAKS) return { ok: false, pesan: "Ukuran berkas maksimal 5 MB." };
-  const boleh = [...TIPE_DIIZINKAN, "application/pdf"] as readonly string[];
-  if (!boleh.includes(file.type)) {
+  if (!TIPE_DIIZINKAN.includes(file.type as (typeof TIPE_DIIZINKAN)[number])) {
     return { ok: false, pesan: "Format harus JPG, PNG, WebP, atau PDF." };
   }
   return { ok: true };

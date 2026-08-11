@@ -34,7 +34,10 @@ export default async function PengaduanPage({
 
   return (
     <main className="px-4 pt-6">
-    <StaggerContainer className="flex flex-col gap-6">
+    {/* pb ekstra menyisakan ruang untuk FAB "Pengaduan Baru" (fixed, bottom-[88px]
+        + tinggi ~56px). Tanpa ini kartu terakhir tertutup tombol saat digulir ke
+        bawah. Nilai ini menutup FAB sekaligus dock nav di bawahnya. */}
+    <StaggerContainer className="flex flex-col gap-6 pb-40">
       <StaggerItem>
       <header>
         <h1 className="t-h1">Pengaduan</h1>
@@ -95,7 +98,7 @@ export default async function PengaduanPage({
 
       {masukan.length > 0 && (
         <StaggerItem>
-        <section className="mb-24">
+        <section>
           <h2 className="t-h3 mb-3">Saran &amp; Kritik</h2>
           {/* Tidak bisa diklik: berbeda dari pengaduan, masukan tidak punya alur
               penanganan untuk dipantau — isinya sudah seluruhnya di kartu ini. */}

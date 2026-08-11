@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BedDouble, ReceiptText, Sofa } from "lucide-react";
+import { ArrowRightLeft, BedDouble, ChevronRight, LogOut, ReceiptText, Sofa } from "lucide-react";
 import DetailTagihan from "@/components/detail-tagihan";
 import KalkulatorSewa from "@/components/kalkulator-sewa";
 import RiwayatPembayaranSoon from "@/components/riwayat-pembayaran-soon";
@@ -132,6 +133,42 @@ export default async function KamarPage() {
         listrikPerBulan={tagihan?.tambahan_listrik ?? 0}
         mulaiDari={tagihan?.periode_akhir ?? null}
       />
+      </StaggerItem>
+
+      <StaggerItem>
+      <section aria-labelledby="judul-pengajuan">
+        <h2 id="judul-pengajuan" className="t-h3 mb-4">
+          Pengajuan
+        </h2>
+        {/* Menu ini dipindah dari halaman Profil ke Kamar: keduanya soal kamar
+            (keluar / pindah), jadi lebih tepat berada di konteks Kamar. Pola
+            kartu meniru menu di Profil (border + ikon + ChevronRight). */}
+        <div className="flex flex-col gap-3">
+          <Link
+            href="/kamar/checkout"
+            className="btn-anim flex min-h-12 items-center gap-3 rounded-lg border border-line bg-raised p-5"
+          >
+            <LogOut size={20} className="shrink-0 text-action" aria-hidden />
+            <span className="flex-1">
+              <span className="t-body block font-medium">Pengajuan Checkout</span>
+              <span className="t-caption text-fg-secondary">Ajukan rencana keluar dari kamar</span>
+            </span>
+            <ChevronRight size={20} className="icon-flow shrink-0 text-fg-secondary" aria-hidden />
+          </Link>
+
+          <Link
+            href="/kamar/pindah"
+            className="btn-anim flex min-h-12 items-center gap-3 rounded-lg border border-line bg-raised p-5"
+          >
+            <ArrowRightLeft size={20} className="shrink-0 text-action" aria-hidden />
+            <span className="flex-1">
+              <span className="t-body block font-medium">Pindah Kamar</span>
+              <span className="t-caption text-fg-secondary">Ajukan pindah ke kamar kosong lain</span>
+            </span>
+            <ChevronRight size={20} className="icon-flow shrink-0 text-fg-secondary" aria-hidden />
+          </Link>
+        </div>
+      </section>
       </StaggerItem>
 
       <StaggerItem>

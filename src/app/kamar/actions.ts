@@ -41,7 +41,11 @@ export async function unggahBukti(_prev: UploadState, formData: FormData): Promi
       file_type: file.type,
       file_size: file.size,
     });
-  } catch {
+  } catch (e) {
+    // Log ke server (terlihat via `wrangler tail`/dashboard Cloudflare). Tanpa ini
+    // penyebab asli — mis. GOOGLE_CLIENT_SECRET/GOOGLE_REFRESH_TOKEN belum di-set
+    // lewat `wrangler secret put` di produksi — tidak pernah kelihatan.
+    console.error("unggahBukti gagal:", e);
     return { error: "Gagal menyimpan bukti. Coba lagi sebentar." };
   }
 

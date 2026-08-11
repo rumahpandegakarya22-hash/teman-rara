@@ -116,7 +116,10 @@ export async function kirimPengaduan(
         );
       }
     });
-  } catch {
+  } catch (e) {
+    // Lihat catatan di kamar/actions.ts: log penyebab asli supaya kegagalan
+    // upload Drive di Cloudflare bisa didiagnosis lewat `wrangler tail`.
+    console.error("kirimPengaduan gagal:", e);
     return { error: "Gagal menyimpan pengaduan. Coba lagi sebentar." };
   }
 
