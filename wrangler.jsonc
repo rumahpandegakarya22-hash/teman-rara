@@ -13,21 +13,8 @@
   "services": [
     { "binding": "WORKER_SELF_REFERENCE", "service": "teman-rara" }
   ],
-  // Cuma nilai yang TIDAK rahasia (aman ikut git). Nilai rahasia (client
-  // secret, refresh token, auth token DB, dst.) JANGAN taruh di sini —
-  // set lewat `wrangler secret put <NAMA>` (lihat README bagian deploy).
-  "vars": {
-    "DATABASE_URL": "libsql://REDACTED.turso.io",
-    "DRIVE_FOLDER_DOKUMEN_INTERNAL": "REDACTED_DRIVE_ID",
-    "DRIVE_FOLDER_BUKTI_PEMBAYARAN_SEWA": "REDACTED_DRIVE_ID",
-    "DRIVE_FOLDER_PENGADUAN": "REDACTED_DRIVE_ID",
-    "DRIVE_DOKUMEN_PENGHUNI": "REDACTED_DRIVE_ID",
-    "DRIVE_FOLDER_BUKTI_PEMBAYARAN_DP": "REDACTED_DRIVE_ID",
-    "GOOGLE_CLIENT_ID": "REDACTED_GOOGLE_CLIENT_ID",
-    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "REDACTED_CLERK_PUBLISHABLE_KEY",
-    "NEXT_PUBLIC_CLERK_SIGN_IN_URL": "/masuk",
-    "NEXT_PUBLIC_CLERK_SIGN_UP_URL": "/daftar",
-    "NEXT_PUBLIC_VAPID_PUBLIC_KEY": "REDACTED_VAPID_PUBLIC_KEY",
-    "VAPID_SUBJECT": "mailto:REDACTED"
-  }
+  // Variabel non-rahasia diinjeksi saat deploy (lihat .github/workflows/deploy.yml,
+  // sumbernya GitHub Variables). Jangan taruh nilai di file ini: repo bisa publik.
+  // keep_vars mencegah deploy lokal menghapus variabel yang sudah terpasang.
+  "keep_vars": true
 }
