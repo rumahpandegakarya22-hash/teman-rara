@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, like, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { activeTenant, booking, kamar, trPendaftaran } from "@/db/schema";
@@ -142,6 +142,7 @@ const schema = z
     darurat2_relasi: z.string().trim().max(50).optional().or(z.literal("")),
     jumlah_gadget: z.coerce.number().int().min(1).max(5),
     barang_elektronik: z.string().trim().min(1, "Barang elektronik wajib diisi (tulis '-' bila tidak ada)").max(500),
+    nopol: z.string().trim().min(1, "Nopol wajib diisi (tulis '-' bila tidak membawa kendaraan)").max(20),
   })
   .refine((d) => d.pekerjaan !== "Mahasiswi" || (d.program_studi ?? "").trim().length > 1, {
     message: "Program studi wajib diisi untuk mahasiswi",
@@ -166,10 +167,15 @@ function lewatBatas(ip: string) {
   return c.jumlah > MAKS;
 }
 
-/** no_booking dari Teman Rara diberi awalan TR supaya mudah dibedakan staf. */
-function buatNoBooking() {
-  const tgl = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  return `TR-${tgl}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+/** Format BK-YYMM-XXX; YYMM dari tanggal booking, XXX urut per bulan. Dipanggil di dalam transaksi. */
+async function buatNoBooking(tx: Pick<typeof db, "select">, tanggalBooking: string) {
+  const yymm = tanggalBooking.slice(2, 4) + tanggalBooking.slice(5, 7);
+  const awalan = `BK-${yymm}-`;
+  const [{ maks }] = await tx
+    .select({ maks: sql<number>`coalesce(max(cast(substr(${booking.no_booking}, -3) as integer)), 0)` })
+    .from(booking)
+    .where(like(booking.no_booking, `${awalan}%`));
+  return `${awalan}${String(maks + 1).padStart(3, "0")}`;
 }
 
 export async function kirimPendaftaran(
@@ -206,7 +212,8 @@ export async function kirimPendaftaran(
     return { error: "Kamar itu tidak tersedia pada tanggal itu. Pilih kamar/tanggal lain atau hubungi pengelola." };
   }
 
-  const noBooking = buatNoBooking();
+  const tanggalBooking = new Date().toISOString().slice(0, 10);
+  let noBooking = "";
 
   try {
     // Unggah dulu: kalau gagal, tidak ada booking menggantung tanpa dokumen.
@@ -216,11 +223,12 @@ export async function kirimPendaftaran(
     ]);
 
     await db.transaction(async (tx) => {
+      noBooking = await buatNoBooking(tx, tanggalBooking);
       // Status 'Pending' — BUKAN 'Check-in', supaya trigger existing tidak
       // membuat occupancy_history/active_tenant sebelum staf memverifikasi.
       await tx.insert(booking).values({
         no_booking: noBooking,
-        tanggal_booking: new Date().toISOString().slice(0, 10),
+        tanggal_booking: tanggalBooking,
         nama_penyewa: d.nama_lengkap,
         no_hp: normalisasi62(d.no_hp),
         kamar_no: Number(d.no_kamar),
@@ -250,6 +258,7 @@ export async function kirimPendaftaran(
         darurat2_relasi: d.darurat2_relasi || null,
         jumlah_gadget: d.jumlah_gadget,
         barang_elektronik: d.barang_elektronik || null,
+        nopol: d.nopol.toUpperCase(),
         url_identitas: urlIdentitas,
         url_bukti_dp: urlBuktiDp,
       });

@@ -342,6 +342,14 @@ export default function FormPendaftaran({ tipeKamar }: { tipeKamar: string[] }) 
               className="w-full rounded-md border border-line bg-raised p-4 t-body focus:border-action"
             />
           </div>
+          <Teks
+            nama="nopol"
+            label="Nopol kendaraan"
+            wajib
+            maxLength={20}
+            placeholder="B 1234 XYZ"
+            bantuan="Tulis - bila tidak membawa kendaraan pribadi."
+          />
         </Seksi>
 
         <div className="flex gap-3">
