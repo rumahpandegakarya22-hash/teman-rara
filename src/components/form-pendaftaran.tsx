@@ -376,7 +376,7 @@ export default function FormPendaftaran({ tipeKamar }: { tipeKamar: string[] }) 
               id="scan_identitas"
               name="scan_identitas"
               required
-              accept="image/jpeg,image/png,image/webp,application/pdf"
+              accept="image/jpeg,image/png,application/pdf"
               judul="Scan identitas"
               deskripsi="KTP atau KTM yang masih berlaku"
               petunjuk="JPG, PNG, WebP, atau PDF. Maksimal 5 MB."
@@ -390,7 +390,7 @@ export default function FormPendaftaran({ tipeKamar }: { tipeKamar: string[] }) 
               id="scan_bukti_dp"
               name="scan_bukti_dp"
               required
-              accept="image/jpeg,image/png,image/webp,application/pdf"
+              accept="image/jpeg,image/png,application/pdf"
               judul="Scan bukti pembayaran DP"
               deskripsi="Bukti transfer uang muka"
               petunjuk="JPG, PNG, WebP, atau PDF. Maksimal 5 MB."

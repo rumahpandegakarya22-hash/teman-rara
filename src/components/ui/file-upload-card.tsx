@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Camera, CheckCircle2, ImageIcon, Trash2, UploadCloud, X } from "lucide-react";
+import { kompresGambar } from "@/lib/kompres-gambar";
 
 /**
  * Port FileUploadCard (21st.dev @ravikatiyar162): kartu unggah dengan drag &
@@ -146,8 +147,10 @@ export function FileUploadCard({
   };
 
   const batas = maks ?? (multiple ? Infinity : 1);
-  const tambah = (baru: File[]) =>
-    sinkron((multiple ? [...files, ...baru] : baru.slice(0, 1)).slice(0, batas));
+  const tambah = async (baru: File[]) => {
+    const kecil = await Promise.all(baru.map((f) => kompresGambar(f)));
+    sinkron((multiple ? [...files, ...kecil] : kecil.slice(0, 1)).slice(0, batas));
+  };
   const hapus = (i: number) => sinkron(files.filter((_, k) => k !== i));
 
   const buka = (pakaiKamera: boolean) => {

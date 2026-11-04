@@ -6,6 +6,7 @@ import { AlertCircle, Camera, CheckCircle2, ImageIcon, X } from "lucide-react";
 import { unggahBukti, type UploadState } from "@/app/kamar/actions";
 import { UploadCardShell } from "@/components/ui/file-upload-card";
 import { FlowButton } from "@/components/ui/flow-button";
+import { kompresGambar } from "@/lib/kompres-gambar";
 
 function SubmitButton({ aktif }: { aktif: boolean }) {
   const { pending } = useFormStatus();
@@ -36,21 +37,12 @@ export default function UploadBukti({ invoiceSewaId }: { invoiceSewaId: number }
     input.click();
   };
 
-  const pilih = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setPratinjau((lama) => {
-      if (lama) URL.revokeObjectURL(lama);
-      return URL.createObjectURL(file);
-    });
-  };
-
-  // Berkas hasil seret-lepas ditulis balik ke input asli lewat DataTransfer,
-  // supaya tetap ikut FormData saat form disubmit.
-  const jatuhkan = (files: File[]) => {
-    const file = files[0];
+  // Foto dikecilkan dulu, lalu ditulis balik ke input asli supaya yang
+  // terkirim di FormData adalah versi kecilnya.
+  const terima = async (asli: File | undefined) => {
     const input = fileRef.current;
-    if (!file || !input) return;
+    if (!asli || !input) return;
+    const file = await kompresGambar(asli);
     const dt = new DataTransfer();
     dt.items.add(file);
     input.files = dt.files;
@@ -59,6 +51,12 @@ export default function UploadBukti({ invoiceSewaId }: { invoiceSewaId: number }
       return URL.createObjectURL(file);
     });
   };
+
+  const pilih = (e: React.ChangeEvent<HTMLInputElement>) => terima(e.target.files?.[0]);
+
+  // Berkas hasil seret-lepas ditulis balik ke input asli lewat DataTransfer,
+  // supaya tetap ikut FormData saat form disubmit.
+  const jatuhkan = (files: File[]) => terima(files[0]);
 
   const batal = () => {
     if (pratinjau) URL.revokeObjectURL(pratinjau);
@@ -93,7 +91,7 @@ export default function UploadBukti({ invoiceSewaId }: { invoiceSewaId: number }
           ref={fileRef}
           type="file"
           name="bukti"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/jpeg,image/png"
           onChange={pilih}
           className="sr-only"
           aria-label="Foto bukti pembayaran"
