@@ -7,7 +7,7 @@ import StatusPengajuanBadge from "@/components/status-pengajuan-badge";
 import TombolBatalPengajuan from "@/components/tombol-batal-pengajuan";
 import { formatTanggal } from "@/lib/format";
 import { wajibMasuk } from "@/lib/guard";
-import { getKamarKosong, getPindahRequestTerakhir } from "@/lib/pengajuan";
+import { PINDAH_KAMAR_AKTIF, getKamarKosong, getPindahRequestTerakhir } from "@/lib/pengajuan";
 import { getSesiPenghuni } from "@/lib/tenant";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +17,7 @@ export default async function PengajuanPindahPage({
 }: {
   searchParams: Promise<{ terkirim?: string }>;
 }) {
+  if (!PINDAH_KAMAR_AKTIF) redirect("/kamar");
   await wajibMasuk("/pengajuan/pindah");
   const sesi = await getSesiPenghuni();
   if (sesi.status === "belum_klaim") redirect("/onboarding");

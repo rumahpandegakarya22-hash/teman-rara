@@ -228,3 +228,41 @@ describe("pendaftaran publik", () => {
     expect(((await kirimPendaftaran({}, new FormData())) as { error?: string }).error).not.toMatch(/Terlalu banyak/);
   });
 });
+
+describe("simpanProfil", () => {
+  it("kirim notifikasi hanya saat email/HP berubah", async () => {
+    const { simpanProfil } = await import("@/app/profil/actions");
+    await penghuni("P1", 71);
+    getPenghuniAktif.mockResolvedValue({
+      id_penghuni: "P1",
+      nama: "P1",
+      no_kamar: 71,
+      email: "lama@x.id",
+      no_hp: "081111111111",
+    });
+    const form = (email: string, hp: string) => {
+      const f = new FormData();
+      f.set("email", email);
+      f.set("no_hp", hp);
+      return f;
+    };
+
+    expect((await simpanProfil({}, form("lama@x.id", "081111111111"))).sukses).toBeTruthy();
+    expect(telegram).not.toHaveBeenCalled();
+
+    await simpanProfil({}, form("baru@x.id", "081111111111"));
+    const pesan = telegram.mock.calls.at(-1)?.[0] ?? "";
+    expect(pesan).toContain("lama@x.id → baru@x.id");
+    expect(pesan).not.toContain("HP:");
+  });
+});
+
+describe("pindah kamar dinonaktifkan", () => {
+  it("menolak pengajuan tanpa menyimpan", async () => {
+    const { kirimPengajuanPindah } = await import("@/app/pengajuan/pindah/actions");
+    await penghuni("P2", 72);
+    const r = await kirimPengajuanPindah({}, new FormData());
+    expect(r.error).toMatch(/dinonaktifkan/);
+    expect(telegram).not.toHaveBeenCalled();
+  });
+});

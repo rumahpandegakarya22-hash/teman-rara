@@ -6,7 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { trPindahRequest } from "@/db/schema";
-import { adaPindahMenunggu, getKamarKosong } from "@/lib/pengajuan";
+import { PINDAH_KAMAR_AKTIF, adaPindahMenunggu, getKamarKosong } from "@/lib/pengajuan";
 import { kirimKePengelola } from "@/lib/push";
 import { getPenghuniAktif } from "@/lib/tenant";
 import { hariIniWIB } from "@/lib/waktu";
@@ -24,6 +24,7 @@ export async function kirimPengajuanPindah(
   _prev: PengajuanState,
   formData: FormData,
 ): Promise<PengajuanState> {
+  if (!PINDAH_KAMAR_AKTIF) return { error: "Fitur pindah kamar sedang dinonaktifkan." };
   const penghuni = await getPenghuniAktif();
   if (!penghuni) return { error: "Kamu belum terhubung ke kamar mana pun." };
 

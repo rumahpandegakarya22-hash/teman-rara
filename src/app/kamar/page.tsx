@@ -10,6 +10,7 @@ import { StaggerContainer, StaggerItem } from "@/components/ui/stagger";
 import WifiCard from "@/components/wifi-card";
 import { formatRupiah, formatTanggal } from "@/lib/format";
 import { wajibMasuk } from "@/lib/guard";
+import { PINDAH_KAMAR_AKTIF } from "@/lib/pengajuan";
 import { getRiwayatBukti, getSesiPenghuni, getTagihanTerbaru, getTunggakanLama } from "@/lib/tenant";
 import { hariIniWIB, selisihHari } from "@/lib/waktu";
 
@@ -175,6 +176,7 @@ export default async function KamarPage() {
             </span>
             <ChevronRight size={20} className="icon-flow shrink-0 text-fg-secondary" aria-hidden />
           </Link>
+          {PINDAH_KAMAR_AKTIF && (
           <Link
             href="/pengajuan/pindah"
             className="btn-anim flex min-h-12 items-center gap-3 rounded-lg border border-line bg-raised p-5 elev-1"
@@ -186,6 +188,7 @@ export default async function KamarPage() {
             </span>
             <ChevronRight size={20} className="icon-flow shrink-0 text-fg-secondary" aria-hidden />
           </Link>
+          )}
         </div>
       </section>
       </StaggerItem>

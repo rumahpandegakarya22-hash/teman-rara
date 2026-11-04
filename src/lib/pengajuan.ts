@@ -77,3 +77,6 @@ export async function adaPindahMenunggu(idPenghuni: string) {
     .limit(1);
   return !!row;
 }
+
+/** Fitur pindah kamar dimatikan. Ubah ke true untuk menyalakan lagi (kartu di /kamar ikut kembali). */
+export const PINDAH_KAMAR_AKTIF = false;
