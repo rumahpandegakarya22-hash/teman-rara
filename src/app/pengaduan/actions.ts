@@ -7,7 +7,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { feedback, tenantComplain, trComplainPhoto, trComplainSync } from "@/db/schema";
 import { JENIS_MASUKAN, KATEGORI, STATUS_BISA_BATAL, jadiTiket } from "@/lib/kategori";
-import { simpanGambar, validasiGambar } from "@/lib/storage";
+import { simpanGambar, validasiBerkas } from "@/lib/storage";
 import { getPenghuniAktif } from "@/lib/tenant";
 import { hariIniWIB } from "@/lib/waktu";
 
@@ -72,7 +72,7 @@ export async function kirimPengaduan(
   const berkas = formData.getAll("foto").filter((f): f is File => f instanceof File && f.size > 0);
   if (berkas.length > MAKS_FOTO) return { error: `Maksimal ${MAKS_FOTO} foto.` };
   for (const f of berkas) {
-    const cek = validasiGambar(f);
+    const cek = await validasiBerkas(f);
     if (!cek.ok) return { error: cek.pesan };
   }
 

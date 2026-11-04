@@ -7,7 +7,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { activeTenant, booking, kamar, trPendaftaran } from "@/db/schema";
 import { normalisasi62 } from "@/lib/phone";
-import { simpanGambar, validasiDokumen } from "@/lib/storage";
+import { simpanGambar, validasiBerkas } from "@/lib/storage";
 import { hariIniWIB, tambahHari } from "@/lib/waktu";
 
 export type KamarOpsi = { no_kamar: number; tipe_kamar: string | null };
@@ -194,7 +194,7 @@ export async function kirimPendaftaran(
     return { error: "Scan identitas dan bukti pembayaran DP wajib diunggah." };
   }
   for (const f of [identitas, buktiDp]) {
-    const cek = validasiDokumen(f);
+    const cek = await validasiBerkas(f);
     if (!cek.ok) return { error: cek.pesan };
   }
 

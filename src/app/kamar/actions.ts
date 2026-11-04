@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { invoiceSewa, trPaymentProof } from "@/db/schema";
-import { simpanGambar, validasiGambar } from "@/lib/storage";
+import { simpanGambar, validasiBerkas } from "@/lib/storage";
 import { getPenghuniAktif } from "@/lib/tenant";
 
 export type UploadState = { error?: string; sukses?: string };
@@ -16,7 +16,7 @@ export async function unggahBukti(_prev: UploadState, formData: FormData): Promi
   const file = formData.get("bukti");
   if (!(file instanceof File)) return { error: "Pilih foto bukti transfer dulu." };
 
-  const cek = validasiGambar(file);
+  const cek = await validasiBerkas(file);
   if (!cek.ok) return { error: cek.pesan };
 
   const invoiceId = Number(formData.get("invoice_sewa_id"));
