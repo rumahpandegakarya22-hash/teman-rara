@@ -1,4 +1,5 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
@@ -37,7 +38,15 @@ const DIR = path.resolve(__dirname, "../../db/migrations");
  * Pakai di test lewat:
  *   vi.mock("@/db", async () => { const t = await buatDbUji(); return { db: t.db }; })
  */
-export async function buatDbUji(url = ":memory:") {
+// File sementara, bukan :memory:. Transaksi libSQL pada :memory: membuka koneksi
+// baru yang kosong, sehingga tabel "hilang" setelah transaksi pertama.
+function urlSementara() {
+  const dir = mkdtempSync(path.join(tmpdir(), "teman-rara-uji-"));
+  process.once("exit", () => rmSync(dir, { recursive: true, force: true }));
+  return `file:${path.join(dir, "uji.db").replaceAll("\\", "/")}`;
+}
+
+export async function buatDbUji(url = urlSementara()) {
   const client = createClient({ url });
   const tr = readdirSync(DIR)
     .filter((f) => /^\d{3}_.*\.sql$/.test(f))
