@@ -1,4 +1,5 @@
-const CACHE = "teman-rara-v1";
+// v2: v1 ikut menyimpan halaman privat (/kamar dst). Activate menghapus cache lama.
+const CACHE = "teman-rara-v2";
 const SHELL = ["/", "/manifest.webmanifest", "/offline.html"];
 
 self.addEventListener("install", (event) => {
@@ -14,20 +15,28 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Network-first untuk navigasi (data papan harus segar), fallback ke cache saat offline.
+// Navigasi: hanya beranda publik ("/") yang boleh disimpan untuk offline. Halaman
+// lain berisi data penghuni (WiFi, tagihan) dan tidak boleh tertinggal di perangkat.
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET" || new URL(request.url).origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
+    const publik = new URL(request.url).pathname === "/";
     event.respondWith(
       fetch(request)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(request, copy));
+          if (publik) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(request, copy));
+          }
           return res;
         })
-        .catch(() => caches.match(request).then((hit) => hit || caches.match("/offline.html"))),
+        .catch(() =>
+          (publik ? caches.match(request) : Promise.resolve(undefined)).then(
+            (hit) => hit || caches.match("/offline.html"),
+          ),
+        ),
     );
     return;
   }
