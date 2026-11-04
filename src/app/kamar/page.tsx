@@ -10,7 +10,7 @@ import { StaggerContainer, StaggerItem } from "@/components/ui/stagger";
 import WifiCard from "@/components/wifi-card";
 import { formatRupiah, formatTanggal } from "@/lib/format";
 import { wajibMasuk } from "@/lib/guard";
-import { getRiwayatBukti, getSesiPenghuni, getTagihanTerbaru } from "@/lib/tenant";
+import { getRiwayatBukti, getSesiPenghuni, getTagihanTerbaru, getTunggakanLama } from "@/lib/tenant";
 import { hariIniWIB, selisihHari } from "@/lib/waktu";
 
 export const dynamic = "force-dynamic";
@@ -23,8 +23,11 @@ export default async function KamarPage() {
   if (sesi.status !== "aktif") return <SewaBerakhir />;
   const { penghuni } = sesi;
 
-  const tagihan = await getTagihanTerbaru(penghuni.id_penghuni);
-  const riwayat = await getRiwayatBukti(penghuni.id_penghuni);
+  const [tagihan, tunggakanLama, riwayat] = await Promise.all([
+    getTagihanTerbaru(penghuni.id_penghuni),
+    getTunggakanLama(penghuni.id_penghuni),
+    getRiwayatBukti(penghuni.id_penghuni),
+  ]);
 
   // Tagihan hanya ditampilkan kalau belum lunas DAN jatuh tempo tinggal
   // <= 7 hari (termasuk yang sudah lewat).
@@ -100,6 +103,25 @@ export default async function KamarPage() {
       {penghuni.wifi_ssid && penghuni.wifi_password && (
         <StaggerItem>
           <WifiCard ssid={penghuni.wifi_ssid} password={penghuni.wifi_password} />
+        </StaggerItem>
+      )}
+
+      {tunggakanLama.length > 0 && (
+        <StaggerItem>
+          <section role="alert" className="rounded-lg border border-line bg-raised p-5 elev-1">
+            <h2 className="t-h3 mb-2 text-danger">Tagihan sebelumnya belum lunas</h2>
+            <ul className="flex flex-col gap-1">
+              {tunggakanLama.map((t) => (
+                <li key={t.id} className="t-body-sm flex justify-between gap-3">
+                  <span>
+                    {t.no_inv} · jatuh tempo {formatTanggal(t.periode_akhir)}
+                  </span>
+                  <span className="tabular-nums">{formatRupiah(t.sisa)}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="t-caption mt-2 text-fg-secondary">Hubungi pengelola untuk pelunasan.</p>
+          </section>
         </StaggerItem>
       )}
 

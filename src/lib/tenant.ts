@@ -1,6 +1,6 @@
 import "server-only";
 import { auth } from "@clerk/nextjs/server";
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, lt, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   activeTenant,
@@ -94,6 +94,11 @@ export async function getPenghuniAktif() {
   return sesi.penghuni;
 }
 
+// Total payment berstatus Paid untuk invoice di baris yang sedang dibaca.
+// Subquery berkorelasi, jadi tagihan + dibayar didapat dalam satu round trip.
+const dibayarSql = sql<number>`COALESCE((SELECT SUM(${payment.amount}) FROM ${payment}
+  WHERE ${payment.invoice_sewa_id} = ${invoiceSewa.id} AND ${payment.status} = 'Paid'), 0)`;
+
 /**
  * Tagihan sewa terbaru. Jatuh tempo memakai `periode_akhir` sesuai keputusan
  * Owner. Status dihitung, bukan disimpan: sistem existing menandai lunas lewat
@@ -116,6 +121,7 @@ export async function getTagihanTerbaru(idPenghuni: string) {
       pajak: invoiceSewa.pajak,
       grand_total: invoiceSewa.grand_total,
       tanggal_pembayaran: invoiceSewa.tanggal_pembayaran,
+      dibayar: dibayarSql,
     })
     .from(invoiceSewa)
     .where(eq(invoiceSewa.id_penghuni, idPenghuni))
@@ -124,13 +130,8 @@ export async function getTagihanTerbaru(idPenghuni: string) {
 
   if (!inv) return null;
 
-  const [bayar] = await db
-    .select({ dibayar: sql<number>`COALESCE(SUM(${payment.amount}), 0)` })
-    .from(payment)
-    .where(and(eq(payment.invoice_sewa_id, inv.id), eq(payment.status, "Paid")));
-
   const total = inv.grand_total ?? 0;
-  const dibayar = Math.round(bayar?.dibayar ?? 0);
+  const dibayar = Math.round(inv.dibayar);
   const hariIni = hariIniWIB();
 
   const status: "lunas" | "sebagian" | "nunggak" | "belum" = inv.tanggal_pembayaran
@@ -142,6 +143,42 @@ export async function getTagihanTerbaru(idPenghuni: string) {
         : "belum";
 
   return { ...inv, dibayar, sisa: Math.max(total - dibayar, 0), status };
+}
+
+/**
+ * Invoice SELAIN yang terbaru yang belum lunas dan sudah lewat jatuh tempo.
+ * getTagihanTerbaru hanya mengambil satu invoice, jadi tunggakan lama akan
+ * tak terlihat begitu invoice berikutnya terbit.
+ */
+export async function getTunggakanLama(idPenghuni: string) {
+  const rows = await db
+    .select({
+      id: invoiceSewa.id,
+      no_inv: invoiceSewa.no_inv,
+      periode_akhir: invoiceSewa.periode_akhir,
+      grand_total: invoiceSewa.grand_total,
+      dibayar: dibayarSql,
+    })
+    .from(invoiceSewa)
+    .where(
+      and(
+        eq(invoiceSewa.id_penghuni, idPenghuni),
+        isNull(invoiceSewa.tanggal_pembayaran),
+        lt(invoiceSewa.periode_akhir, hariIniWIB()),
+        sql`${invoiceSewa.id} <> (SELECT t.id FROM invoice_sewa t WHERE t.id_penghuni = ${idPenghuni}
+          ORDER BY t.periode_akhir DESC LIMIT 1)`,
+      ),
+    )
+    .orderBy(desc(invoiceSewa.periode_akhir));
+
+  return rows
+    .map((r) => ({
+      id: r.id,
+      no_inv: r.no_inv,
+      periode_akhir: r.periode_akhir as string,
+      sisa: Math.max((r.grand_total ?? 0) - Math.round(r.dibayar), 0),
+    }))
+    .filter((r) => r.sisa > 0);
 }
 
 /** Semua tagihan penghuni, terbaru dulu. Dipakai halaman Riwayat Pembayaran. */
