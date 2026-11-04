@@ -1,6 +1,9 @@
 // Uji lapisan data dasbor tanpa sesi Clerk: buat penghuni + tagihan contoh,
 // lalu periksa query yang dipakai halaman /kamar. Jalankan: node --env-file=.env scripts/smoke-dasbor.mjs
 import { createClient } from "@libsql/client";
+import { wajibIzinProduksi } from "./_guard.mjs";
+
+wajibIzinProduksi();
 
 const db = createClient({ url: process.env.DATABASE_URL });
 const uuid = () => crypto.randomUUID();
