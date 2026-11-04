@@ -2,11 +2,6 @@ import type { NextConfig } from "next";
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 
 const nextConfig: NextConfig = {
-  // PDF peraturan internal berada di luar public/ agar tidak bisa diakses lewat
-  // URL langsung. Sertakan foldernya saat build supaya tetap terbaca di server.
-  outputFileTracingIncludes: {
-    "/api/peraturan": ["./private/peraturan/**"],
-  },
   // @libsql/client butuh binding WebSocket asli (bukan polyfill nodejs_compat)
   // saat jalan di Workers runtime.
   serverExternalPackages: ["@libsql/isomorphic-ws"],
