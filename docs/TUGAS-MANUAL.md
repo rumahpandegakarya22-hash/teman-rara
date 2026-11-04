@@ -17,21 +17,27 @@ Perintah `turso` dan `npm` dijalankan dari terminal di folder `teman-rara`. Jang
 
 ## Tahap 1. Migrasi database (WAJIB sebelum deploy)
 
-Nama database Turso kemungkinan `kost-tiga-dara`. Cek dengan `turso db list`.
+Memakai skrip `scripts/migrasi.mjs` (tidak perlu Turso CLI; CLI-nya tidak mendukung Windows secara native). Skrip membaca `DATABASE_URL` dan token dari `.env`, yaitu database produksi.
 
+- [ ] Cek keadaan sekarang (hanya membaca):
+  ```bash
+  node --env-file=.env scripts/migrasi.mjs --cek
+  ```
+  Sebelum migrasi harus keluar `BELUM tr_rate_limit` dan `BELUM tr_claim_code`.
 - [ ] Jalankan migrasi rate limit:
   ```bash
-  turso db shell kost-tiga-dara < db/migrations/008_rate_limit.sql
+  node --env-file=.env scripts/migrasi.mjs db/migrations/008_rate_limit.sql --ya-ini-produksi
   ```
 - [ ] Jalankan migrasi kode klaim:
   ```bash
-  turso db shell kost-tiga-dara < db/migrations/009_kode_klaim.sql
+  node --env-file=.env scripts/migrasi.mjs db/migrations/009_kode_klaim.sql --ya-ini-produksi
   ```
-- [ ] Pastikan kedua tabel ada:
+- [ ] Cek ulang. Harus keluar `ADA tr_rate_limit` dan `ADA tr_claim_code`:
   ```bash
-  turso db shell kost-tiga-dara "SELECT name FROM sqlite_master WHERE name IN ('tr_rate_limit','tr_claim_code')"
+  node --env-file=.env scripts/migrasi.mjs --cek
   ```
-  Harus keluar 2 baris. (Alternatif tanpa CLI: buka dashboard Turso → database → *Shell*, tempel isi kedua file SQL.)
+
+(Alternatif tanpa terminal: dashboard Turso → database → *SQL console/Shell*, tempel isi kedua file SQL.)
 
 Kedua migrasi aditif (hanya membuat tabel baru), aman diulang karena memakai `IF NOT EXISTS`.
 
