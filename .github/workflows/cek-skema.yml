@@ -1,0 +1,23 @@
+name: Cek drift skema
+
+# Skema tabel Ops dikelola di repo lain. Job ini memastikan src/db/schema.ts
+# masih cocok dengan DB produksi. Pakai token Turso READ-ONLY.
+on:
+  schedule:
+    - cron: "0 2 * * 1"
+  workflow_dispatch:
+
+jobs:
+  cek:
+    runs-on: ubuntu-latest
+    environment: CLOUDFLARE_API_TOKEN
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run db:cek-skema
+        env:
+          DATABASE_URL: ${{ vars.DATABASE_URL }}
+          DATABASE_AUTH_TOKEN: ${{ secrets.DATABASE_AUTH_TOKEN_READONLY }}
