@@ -37,12 +37,14 @@ const DIR = path.resolve(__dirname, "../../db/migrations");
  * Pakai di test lewat:
  *   vi.mock("@/db", async () => { const t = await buatDbUji(); return { db: t.db }; })
  */
-export async function buatDbUji() {
-  const client = createClient({ url: ":memory:" });
+export async function buatDbUji(url = ":memory:") {
+  const client = createClient({ url });
   const tr = readdirSync(DIR)
     .filter((f) => /^\d{3}_.*\.sql$/.test(f))
     .sort();
-  for (const f of ["_replika_000.sql", "_replika_001.sql", ...tr]) {
+  // Urutan: skema Ops (_replika_000/001), migrasi tr_ (003+), lalu kolom tambahan
+  // Ops (_replika_002) yang bergantung pada tabel tr_payment_proof.
+  for (const f of ["_replika_000.sql", "_replika_001.sql", ...tr, "_replika_002_ops_kolom.sql"]) {
     const semua = pecahStatement(readFileSync(path.join(DIR, f), "utf8"));
     const isTabel = (s: string) => /^\s*CREATE\s+TABLE/i.test(s);
     for (const sql of [...semua.filter(isTabel), ...semua.filter((s) => !isTabel(s))]) {

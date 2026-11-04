@@ -68,7 +68,7 @@ export default function UploadBukti({ invoiceSewaId }: { invoiceSewaId: number }
     <section className="rounded-lg border border-line bg-raised p-5 elev-1">
       <h2 className="t-h3 mb-1">Unggah Bukti Bayar</h2>
       <p className="t-body-sm mb-4 text-fg-secondary">
-        Foto struk atau tangkapan layar transfer. Maksimal 5 MB.
+        Foto struk atau tangkapan layar transfer. Foto dikecilkan otomatis.
       </p>
 
       {state.sukses && (
@@ -119,7 +119,7 @@ export default function UploadBukti({ invoiceSewaId }: { invoiceSewaId: number }
           <UploadCardShell
             judul="Bukti pembayaran"
             deskripsi="Foto struk atau tangkapan layar transfer"
-            petunjuk="JPG, PNG, atau WebP. Maksimal 5 MB."
+            petunjuk="JPG atau PNG. Foto dikecilkan otomatis."
             onDropFiles={jatuhkan}
           >
             <div className="flex gap-3">

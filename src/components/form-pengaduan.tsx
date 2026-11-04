@@ -215,7 +215,7 @@ export default function FormPengaduan() {
           <UploadCardShell
             judul="Foto bukti"
             deskripsi={`Ambil foto langsung atau pilih dari galeri (maks ${MAKS_FOTO})`}
-            petunjuk="JPG, PNG, atau WebP."
+            petunjuk="JPG atau PNG. Foto dikecilkan otomatis."
             onDropFiles={tambahBerkas}
           >
             <div className="flex gap-3">

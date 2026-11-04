@@ -9,4 +9,10 @@ describe("buatDbUji", () => {
     const tr = await client.execute("select name from sqlite_master where name='tr_account'");
     expect(tr.rows.length).toBe(1);
   });
+
+  it("memuat kolom Ops yang dipetakan schema.ts", async () => {
+    const { client } = await buatDbUji();
+    const kolom = await client.execute("pragma table_info(tr_payment_proof)");
+    expect(kolom.rows.map((r) => r.name)).toContain("rejected_at");
+  });
 });
