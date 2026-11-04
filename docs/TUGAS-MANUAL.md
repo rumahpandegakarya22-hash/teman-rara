@@ -114,7 +114,7 @@ Rutinitas selanjutnya:
   ```bash
   git push -u origin perbaikan-audit
   ```
-  Buka PR di GitHub. CI akan menjalankan `typecheck`, `lint`, dan `test` (tanpa deploy untuk PR; deploy hanya saat push ke `master`).
+  Buka PR di GitHub. Workflow `CI` akan menjalankan `typecheck`, `lint`, dan `test` pada PR (tidak ada deploy; deploy hanya saat push ke `master`).
 - [ ] Setelah CI hijau, **merge** PR. Merge ke `master` memicu workflow *Deploy to Cloudflare*.
 - [ ] Pantau tab *Actions*: job harus hijau, termasuk 3 langkah baru (typecheck, lint, test) sebelum build.
 - [ ] **Deploy ulang cron-worker** (CI hanya men-deploy aplikasi utama, bukan cron-worker):
