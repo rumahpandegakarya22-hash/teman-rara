@@ -2,12 +2,15 @@
 
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/db";
 import { activeTenant, trAccount } from "@/db/schema";
 import { hpSama } from "@/lib/phone";
 import { isiEmailKosong } from "@/lib/tenant-write";
+import { ambilIp } from "@/lib/ip";
+import { cobaPakai } from "@/lib/rate-limit";
 
 const schema = z.object({
   no_kamar: z.string().trim().min(1, "Nomor kamar wajib diisi").max(10),
@@ -15,23 +18,6 @@ const schema = z.object({
 });
 
 export type OnboardingState = { error?: string };
-
-// Batas percobaan per akun Clerk. Disimpan di memori proses: cukup untuk skala
-// 30 kamar, dan penyerang tetap butuh akun Clerk terverifikasi per percobaan.
-const percobaan = new Map<string, { jumlah: number; sampai: number }>();
-const MAKS_PERCOBAAN = 5;
-const JENDELA_MS = 15 * 60_000;
-
-function lewatBatas(userId: string) {
-  const sekarang = Date.now();
-  const catatan = percobaan.get(userId);
-  if (!catatan || catatan.sampai < sekarang) {
-    percobaan.set(userId, { jumlah: 1, sampai: sekarang + JENDELA_MS });
-    return false;
-  }
-  catatan.jumlah += 1;
-  return catatan.jumlah > MAKS_PERCOBAAN;
-}
 
 /**
  * Klaim akun: hanya penghuni yang sedang tinggal yang boleh punya akun.
@@ -44,7 +30,13 @@ export async function klaimAkun(_prev: OnboardingState, formData: FormData): Pro
   const user = await currentUser();
   if (!user) return { error: "Sesi tidak valid. Coba masuk ulang." };
 
-  if (lewatBatas(user.id)) {
+  // Batas per akun Clerk DAN per IP: penyerang bisa membuat banyak akun Clerk.
+  const ip = ambilIp(await headers());
+  const [perAkun, perIp] = await Promise.all([
+    cobaPakai(`klaim-user:${user.id}`, 5, 900),
+    cobaPakai(`klaim-ip:${ip}`, 20, 3600),
+  ]);
+  if (!perAkun.ok || !perIp.ok) {
     return { error: "Terlalu banyak percobaan. Coba lagi 15 menit lagi atau hubungi pengelola." };
   }
 
@@ -99,6 +91,5 @@ export async function klaimAkun(_prev: OnboardingState, formData: FormData): Pro
     return { error: "Gagal menyimpan data. Coba lagi sebentar." };
   }
 
-  percobaan.delete(user.id);
   redirect("/kamar");
 }

@@ -6,6 +6,7 @@ import { formatRupiah, formatTanggal } from "@/lib/format";
 import { normalisasiStatus } from "@/lib/kategori";
 import { kirimKePenghuni } from "@/lib/push";
 import { hariIniWIB, selisihHari, tambahHari } from "@/lib/waktu";
+import { bersihkanRateLimit } from "@/lib/rate-limit";
 
 // Titik pengingat relatif ke periode_akhir: 7/3/1 hari sebelum jatuh tempo,
 // 0 = hari-H, -3/-7 = 3/7 hari setelah (telat). Cron boleh jalan sesering apa
@@ -68,6 +69,9 @@ export async function jalankanPengingatJatuhTempo() {
     });
     terkirim += hasil.terkirim;
   }
+
+  // Kebersihan tabel rate limit ikut di job rutin ini; kegagalannya tidak penting.
+  await bersihkanRateLimit().catch(() => {});
 
   return { tagihan_diperiksa: dicek, notifikasi_terkirim: terkirim };
 }

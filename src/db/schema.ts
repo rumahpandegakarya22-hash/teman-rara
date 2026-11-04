@@ -429,3 +429,14 @@ export const trInvoiceReminderSync = sqliteTable(
 export type KategoriComplain = (typeof KATEGORI_COMPLAIN)[number];
 export type InvoiceSewaRow = typeof invoiceSewa.$inferSelect;
 export type TenantComplainRow = typeof tenantComplain.$inferSelect;
+
+/** Rate limit fixed-window berbasis DB. Dikelola db/migrations/008_rate_limit.sql. */
+export const trRateLimit = sqliteTable(
+  "tr_rate_limit",
+  {
+    kunci: text("kunci").notNull(),
+    jendela: integer("jendela").notNull(),
+    jumlah: integer("jumlah").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.kunci, t.jendela] })],
+);

@@ -6,12 +6,17 @@ import { db } from "@/db";
 import { invoiceSewa, trPaymentProof } from "@/db/schema";
 import { simpanGambar, validasiBerkas } from "@/lib/storage";
 import { getPenghuniAktif } from "@/lib/tenant";
+import { cobaPakai } from "@/lib/rate-limit";
 
 export type UploadState = { error?: string; sukses?: string };
 
 export async function unggahBukti(_prev: UploadState, formData: FormData): Promise<UploadState> {
   const penghuni = await getPenghuniAktif();
   if (!penghuni) return { error: "Kamu belum terhubung ke kamar mana pun." };
+
+  if (!(await cobaPakai(`bukti:${penghuni.id_penghuni}`, 10, 3600)).ok) {
+    return { error: "Terlalu banyak unggahan. Coba lagi satu jam lagi atau hubungi pengelola." };
+  }
 
   const file = formData.get("bukti");
   if (!(file instanceof File)) return { error: "Pilih foto bukti transfer dulu." };

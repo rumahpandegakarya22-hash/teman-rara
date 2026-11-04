@@ -9,6 +9,8 @@ import { activeTenant, booking, kamar, trPendaftaran } from "@/db/schema";
 import { normalisasi62 } from "@/lib/phone";
 import { simpanGambar, validasiBerkas } from "@/lib/storage";
 import { hariIniWIB, tambahHari } from "@/lib/waktu";
+import { ambilIp } from "@/lib/ip";
+import { cobaPakai } from "@/lib/rate-limit";
 
 export type KamarOpsi = { no_kamar: number; tipe_kamar: string | null };
 
@@ -104,6 +106,10 @@ const tanggalSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Tanggal tidak val
 
 /** Dipanggil langsung dari form (bukan submit) saat pendaftar memilih tanggal + tipe kamar. */
 export async function cekKetersediaan(tanggal: string, tipeKamar: string): Promise<KetersediaanState> {
+  const ip = ambilIp(await headers());
+  if (!(await cobaPakai(`ketersediaan:${ip}`, 30, 60)).ok) {
+    return { kamar: [], error: "Terlalu banyak permintaan. Coba lagi sebentar." };
+  }
   const parsedTanggal = tanggalSchema.safeParse(tanggal);
   if (!parsedTanggal.success || !tipeKamar.trim()) {
     return { kamar: [], error: "Isi tanggal dan tipe kamar dulu." };
@@ -146,22 +152,6 @@ const schema = z
 
 export type PendaftaranState = { error?: string };
 
-// Batas kiriman per IP. Form ini publik, jadi perlu rem sederhana.
-const jejak = new Map<string, { jumlah: number; sampai: number }>();
-const MAKS = 3;
-const JENDELA_MS = 60 * 60_000;
-
-function lewatBatas(ip: string) {
-  const kini = Date.now();
-  const c = jejak.get(ip);
-  if (!c || c.sampai < kini) {
-    jejak.set(ip, { jumlah: 1, sampai: kini + JENDELA_MS });
-    return false;
-  }
-  c.jumlah += 1;
-  return c.jumlah > MAKS;
-}
-
 /** Format BK-YYMM-XXX; YYMM dari tanggal booking, XXX urut per bulan. Dipanggil di dalam transaksi. */
 async function buatNoBooking(tx: Pick<typeof db, "select">, tanggalBooking: string) {
   const yymm = tanggalBooking.slice(2, 4) + tanggalBooking.slice(5, 7);
@@ -177,8 +167,8 @@ export async function kirimPendaftaran(
   _prev: PendaftaranState,
   formData: FormData,
 ): Promise<PendaftaranState> {
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "lokal";
-  if (lewatBatas(ip)) {
+  const ip = ambilIp(await headers());
+  if (!(await cobaPakai(`pendaftaran:${ip}`, 3, 3600)).ok) {
     return { error: "Terlalu banyak pengiriman. Coba lagi satu jam lagi atau hubungi pengelola." };
   }
 
