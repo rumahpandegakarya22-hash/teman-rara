@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 
 const SEEN_KEY = "tr.board.lastSeen";
-const POLL_MS = 60_000;
+const POLL_MS = 300_000;
 
 /**
  * Mendeteksi pembaruan papan informasi: bandingkan updated_at terbaru dari server
  * dengan yang terakhir dilihat di perangkat ini. Kalau izin notifikasi sudah
- * diberikan, tampilkan juga notifikasi browser.
+ * diberikan, tampilkan juga notifikasi browser. Polling hanya saat tab terlihat:
+ * tab di latar tidak perlu membebani server, dan push sudah mengabari penghuni.
  */
 export default function UpdateWatcher() {
   const [pembaruan, setPembaruan] = useState<string | null>(null);
@@ -43,11 +44,27 @@ export default function UpdateWatcher() {
       }
     };
 
-    cek();
-    const id = setInterval(cek, POLL_MS);
+    let id: ReturnType<typeof setInterval> | undefined;
+    const mulai = () => {
+      cek();
+      id = setInterval(cek, POLL_MS);
+    };
+    const henti = () => {
+      clearInterval(id);
+      id = undefined;
+    };
+    const saatVisibilitasBerubah = () => {
+      if (document.visibilityState === "visible") {
+        if (id === undefined) mulai();
+      } else henti();
+    };
+
+    if (document.visibilityState === "visible") mulai();
+    document.addEventListener("visibilitychange", saatVisibilitasBerubah);
     return () => {
       batal = true;
-      clearInterval(id);
+      henti();
+      document.removeEventListener("visibilitychange", saatVisibilitasBerubah);
     };
   }, []);
 
