@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { cocokSecret } from "@/lib/cron-auth";
+import { cobaPakai } from "@/lib/rate-limit";
+import { kirimTelegram } from "@/lib/telegram";
 import { jalankanPengingatJatuhTempo, sinkronStatusPengaduan } from "@/lib/jobs";
 
 export const dynamic = "force-dynamic";
@@ -30,5 +32,15 @@ export async function GET(request: Request) {
   };
 
   const adaGagal = tagihan.status === "rejected" || pengaduan.status === "rejected";
+  if (adaGagal) {
+    // Maksimal satu peringatan per jam supaya cron 15 menit tidak membanjiri chat.
+    const gagal = [tagihan.status === "rejected" && "pengingat jatuh tempo", pengaduan.status === "rejected" && "sinkron pengaduan"]
+      .filter(Boolean)
+      .join(", ");
+    if ((await cobaPakai("alert-cron", 1, 3600)).ok) {
+      await kirimTelegram(`<b>Cron Teman Rara gagal</b>
+Job: ${gagal}. Cek Workers Logs.`);
+    }
+  }
   return NextResponse.json(hasil, { status: adaGagal ? 500 : 200 });
 }

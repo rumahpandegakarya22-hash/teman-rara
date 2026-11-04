@@ -7,6 +7,7 @@ import { invoiceSewa, trPaymentProof } from "@/db/schema";
 import { simpanGambar, validasiBerkas } from "@/lib/storage";
 import { getPenghuniAktif } from "@/lib/tenant";
 import { cobaPakai } from "@/lib/rate-limit";
+import { kirimKePengelola } from "@/lib/push";
 
 export type UploadState = { error?: string; sukses?: string };
 
@@ -31,7 +32,7 @@ export async function unggahBukti(_prev: UploadState, formData: FormData): Promi
 
   // Pastikan tagihan memang milik penghuni ini. Jangan percaya id dari form.
   const [tagihan] = await db
-    .select({ id: invoiceSewa.id })
+    .select({ id: invoiceSewa.id, no_inv: invoiceSewa.no_inv })
     .from(invoiceSewa)
     .where(and(eq(invoiceSewa.id, invoiceId), eq(invoiceSewa.id_penghuni, penghuni.id_penghuni)))
     .limit(1);
@@ -49,6 +50,11 @@ export async function unggahBukti(_prev: UploadState, formData: FormData): Promi
   } catch {
     return { error: "Gagal menyimpan bukti. Coba lagi sebentar." };
   }
+
+  await kirimKePengelola({
+    title: "Bukti bayar baru",
+    body: `${penghuni.nama} (Kamar ${penghuni.no_kamar}) mengunggah bukti untuk ${tagihan.no_inv}.`,
+  });
 
   revalidatePath("/kamar");
   return { sukses: "Bukti pembayaran berhasil diunggah. Menunggu verifikasi pengelola." };

@@ -11,6 +11,7 @@ import { simpanGambar, validasiBerkas } from "@/lib/storage";
 import { hariIniWIB, tambahHari } from "@/lib/waktu";
 import { ambilIp } from "@/lib/ip";
 import { cobaPakai } from "@/lib/rate-limit";
+import { kirimKePengelola } from "@/lib/push";
 
 export type KamarOpsi = { no_kamar: number; tipe_kamar: string | null };
 
@@ -259,6 +260,11 @@ export async function kirimPendaftaran(
     }
     return { error: "Gagal menyimpan pendaftaran. Coba lagi sebentar." };
   }
+
+  await kirimKePengelola({
+    title: "Pendaftaran baru",
+    body: `${d.nama_lengkap} · Kamar ${d.no_kamar} · masuk ${d.rencana_masuk} (${noBooking})`,
+  });
 
   redirect(`/pendaftaran/terkirim?no=${encodeURIComponent(noBooking)}`);
 }

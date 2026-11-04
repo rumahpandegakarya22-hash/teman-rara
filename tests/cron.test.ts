@@ -15,6 +15,11 @@ describe("cocokSecret", () => {
   });
 });
 
+const telegram = vi.fn(async (_teks: string) => ({ ok: true }));
+const kuota = vi.fn(async () => ({ ok: true, sisa: 0 }));
+vi.mock("@/lib/telegram", () => ({ kirimTelegram: telegram }));
+vi.mock("@/lib/rate-limit", () => ({ cobaPakai: kuota }));
+
 const pengingat = vi.fn();
 const sinkron = vi.fn();
 vi.mock("@/lib/jobs", () => ({
@@ -32,6 +37,8 @@ describe("GET /api/cron/harian", () => {
     process.env.CRON_SECRET = "s3cret";
     pengingat.mockReset().mockResolvedValue({ ok: 1 });
     sinkron.mockReset().mockResolvedValue({ ok: 1 });
+    telegram.mockClear();
+    kuota.mockReset().mockResolvedValue({ ok: true, sisa: 0 });
   });
 
   it("401 tanpa header, atau secret salah", async () => {
@@ -51,5 +58,21 @@ describe("GET /api/cron/harian", () => {
     const res = await panggil("Bearer s3cret");
     expect(res.status).toBe(500);
     expect(sinkron).toHaveBeenCalledTimes(1);
+  });
+
+  it("kegagalan job memicu peringatan Telegram, tapi hanya bila kuota per jam masih ada", async () => {
+    pengingat.mockRejectedValue(new Error("boom"));
+    await panggil("Bearer s3cret");
+    expect(telegram).toHaveBeenCalledTimes(1);
+    expect(telegram.mock.calls[0][0]).toContain("pengingat jatuh tempo");
+
+    kuota.mockResolvedValue({ ok: false, sisa: 0 });
+    await panggil("Bearer s3cret");
+    expect(telegram).toHaveBeenCalledTimes(1);
+  });
+
+  it("sukses tidak mengirim peringatan", async () => {
+    await panggil("Bearer s3cret");
+    expect(telegram).not.toHaveBeenCalled();
   });
 });

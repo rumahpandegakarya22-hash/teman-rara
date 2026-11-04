@@ -29,6 +29,11 @@ vi.mock("next/navigation", () => ({
     throw new Error(`REDIRECT:${url}`);
   },
 }));
+const telegram = vi.fn(async (_teks: string) => ({ ok: true }));
+vi.mock("@/lib/telegram", async (asli) => ({
+  ...(await asli<typeof import("@/lib/telegram")>()),
+  kirimTelegram: telegram,
+}));
 const getPenghuniAktif = vi.fn();
 vi.mock("@/lib/tenant", () => ({ getPenghuniAktif }));
 vi.mock("@/lib/storage", async (asli) => ({
@@ -64,7 +69,10 @@ async function jalankan(fn: () => Promise<unknown>) {
 beforeAll(async () => {
   await import("@/db");
 });
-beforeEach(() => getPenghuniAktif.mockReset());
+beforeEach(() => {
+  getPenghuniAktif.mockReset();
+  telegram.mockClear();
+});
 
 describe("unggahBukti", () => {
   it("menyimpan bukti untuk invoice sendiri, menolak invoice orang lain, membatasi 10 per jam", async () => {
@@ -93,6 +101,8 @@ describe("unggahBukti", () => {
     expect((await unggahBukti({}, form(lain.id))).error).toBe("Tagihan tidak ditemukan.");
     expect((await unggahBukti({}, form(milik.id))).sukses).toBeTruthy();
     expect(await uji.db.select().from(trPaymentProof).where(eq(trPaymentProof.id_penghuni, "U1"))).toHaveLength(1);
+    expect(telegram.mock.calls.at(-1)?.[0]).toContain("Bukti bayar baru");
+    expect(telegram.mock.calls.at(-1)?.[0]).toContain("U1 (Kamar 11)");
 
     for (let i = 0; i < 8; i++) await unggahBukti({}, form(milik.id)); // kuota habis di percobaan ke-10
     const kelebihan = await unggahBukti({}, form(milik.id));
@@ -134,6 +144,17 @@ describe("kirimPengaduan", () => {
     expect(await uji.db.select().from(tenantComplain).where(eq(tenantComplain.id_complain, id))).toHaveLength(1);
     expect(await uji.db.select().from(trComplainSync).where(eq(trComplainSync.id_complain, id))).toHaveLength(1);
     expect(await uji.db.select().from(trComplainPhoto).where(eq(trComplainPhoto.id_complain, id))).toHaveLength(1);
+    expect(telegram.mock.calls.at(-1)?.[0]).toContain("Pengaduan baru");
+    expect(telegram.mock.calls.at(-1)?.[0]).toContain("Wifi mati");
+  });
+
+  it("Saran/Kritik masuk ke feedback dan juga memberi tahu pengelola", async () => {
+    const { kirimPengaduan } = await import("@/app/pengaduan/actions");
+    await penghuni("G3", 23);
+    const f = isiForm("Tambah jemuran");
+    f.set("jenis", "Saran");
+    expect(await jalankan(() => kirimPengaduan({}, f))).toEqual({ redirect: "/pengaduan?terkirim=1" });
+    expect(telegram.mock.calls.at(-1)?.[0]).toContain("Saran baru");
   });
 
   it("menolak lebih dari 3 foto", async () => {
@@ -183,6 +204,8 @@ describe("pendaftaran publik", () => {
     const [p] = await uji.db.select().from(trPendaftaran).where(eq(trPendaftaran.no_booking, no));
     expect(p.nopol).toBe("D 1234 AB");
     expect(p.no_hp).toBe("6281234567890");
+    expect(telegram.mock.calls.at(-1)?.[0]).toContain("Pendaftaran baru");
+    expect(telegram.mock.calls.at(-1)?.[0]).toContain(no);
 
     const ulang = (await kirimPendaftaran({}, isi(31))) as { error?: string };
     expect(ulang.error).toMatch(/tidak tersedia/);

@@ -10,6 +10,7 @@ import { JENIS_MASUKAN, KATEGORI, STATUS_BISA_BATAL, jadiTiket } from "@/lib/kat
 import { simpanGambar, validasiBerkas } from "@/lib/storage";
 import { getPenghuniAktif } from "@/lib/tenant";
 import { hariIniWIB } from "@/lib/waktu";
+import { kirimKePengelola } from "@/lib/push";
 
 const MAKS_FOTO = 3;
 
@@ -65,6 +66,10 @@ export async function kirimPengaduan(
     } catch {
       return { error: "Gagal menyimpan masukan. Coba lagi sebentar." };
     }
+    await kirimKePengelola({
+      title: `${parsed.data.jenis} baru`,
+      body: `${penghuni.nama} (Kamar ${penghuni.no_kamar}) [${parsed.data.category}]: ${parsed.data.title}`,
+    });
     revalidatePath("/pengaduan");
     redirect("/pengaduan?terkirim=1");
   }
@@ -121,6 +126,10 @@ export async function kirimPengaduan(
     return { error: "Gagal menyimpan pengaduan. Coba lagi sebentar." };
   }
 
+  await kirimKePengelola({
+    title: "Pengaduan baru",
+    body: `${penghuni.nama} (Kamar ${penghuni.no_kamar}) [${parsed.data.category}]: ${parsed.data.title}`,
+  });
   revalidatePath("/pengaduan");
   redirect(`/pengaduan/${idComplain}`);
 }
