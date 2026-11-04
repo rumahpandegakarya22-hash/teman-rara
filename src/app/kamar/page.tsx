@@ -150,7 +150,7 @@ export default async function KamarPage() {
             <LogOut size={20} className="shrink-0 text-action" aria-hidden />
             <span className="flex-1">
               <span className="t-body block font-medium">Pengajuan Checkout</span>
-              <span className="t-caption text-fg-secondary">Ajukan rencana keluar dari kamar</span>
+              <span className="t-caption text-fg-secondary">Ajukan rencana keluar dari kost</span>
             </span>
             <ChevronRight size={20} className="icon-flow shrink-0 text-fg-secondary" aria-hidden />
           </Link>

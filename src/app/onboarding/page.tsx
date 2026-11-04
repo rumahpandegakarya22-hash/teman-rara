@@ -19,8 +19,7 @@ export default async function OnboardingPage() {
         <p className="t-overline text-fg-secondary">Langkah terakhir</p>
         <h1 className="t-h1 mt-1">Hubungkan akunmu</h1>
         <p className="t-body-sm mt-2 text-fg-secondary">
-          Cocokkan dengan data penghuni yang tersimpan di pengelola, supaya info kamar dan tagihanmu
-          bisa ditampilkan.
+          Pencocokkan dengan data penghuni yang tersimpan di pengelola.
         </p>
       </header>
 

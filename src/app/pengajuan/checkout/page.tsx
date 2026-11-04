@@ -46,7 +46,7 @@ export default async function PengajuanCheckoutPage({
         </h1>
         <p className="t-body-sm mt-2 text-fg-secondary">
           Ajukan rencana keluar dari kamar. Pengelola akan memverifikasi dan menghubungi kamu sebelum
-          proses checkout final (deposit, kondisi kamar, dll.).
+          proses checkout.
         </p>
       </header>
 
@@ -85,7 +85,7 @@ export default async function PengajuanCheckoutPage({
 
       {menunggu ? (
         <p className="rounded-md border border-line bg-raised p-4 t-body-sm text-fg-secondary">
-          Pengajuanmu sedang diproses pengelola. Batalkan dulu di atas kalau mau mengajukan yang baru.
+          Pengajuanmu sedang diproses pengelola. Batalkan dulu sebelum mengajukan yang baru.
         </p>
       ) : (
         <FormPengajuanCheckout />

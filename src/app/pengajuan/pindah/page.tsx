@@ -92,7 +92,7 @@ export default async function PengajuanPindahPage({
 
       {menunggu ? (
         <p className="rounded-md border border-line bg-raised p-4 t-body-sm text-fg-secondary">
-          Pengajuanmu sedang diproses pengelola. Batalkan dulu di atas kalau mau mengajukan yang baru.
+          Pengajuanmu sedang diproses pengelola. Batalkan dulu sebelum mengajukan yang baru.
         </p>
       ) : (
         <FormPengajuanPindah kamarKosong={kamarKosong} />

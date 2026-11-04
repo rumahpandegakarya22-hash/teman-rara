@@ -27,7 +27,7 @@ export default async function PendaftaranPage() {
         <p className="t-overline text-fg-secondary">Kost Tiga Dara</p>
         <h1 className="t-h1 mt-1">Pendaftaran Penghuni Baru</h1>
         <p className="t-body-sm mt-2 text-fg-secondary">
-          Isi formulir ini untuk mengajukan kamar. Tidak perlu punya akun. Pengelola akan menghubungi
+          Isi formulir ini untuk booking kamar. Pengelola akan menghubungi
           kamu untuk verifikasi sebelum check-in.
         </p>
       </header>
