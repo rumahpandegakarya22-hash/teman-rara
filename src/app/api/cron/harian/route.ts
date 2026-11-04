@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
+import { cocokSecret } from "@/lib/cron-auth";
 import { jalankanPengingatJatuhTempo, sinkronStatusPengaduan } from "@/lib/jobs";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Satu cron harian yang menjalankan semua job terjadwal.
- *
- * Digabung jadi satu karena paket Vercel Hobby hanya mengizinkan cron sekali
- * sehari per proyek. Endpoint ini publik secara jaringan, jadi diamankan
- * dengan CRON_SECRET dan tidak boleh mengandalkan sesi.
+ * Menjalankan semua job terjadwal. Nama path "harian" peninggalan Vercel; kini
+ * dipanggil tiap 15 menit oleh cron-worker, jadi semua job harus idempoten.
+ * Endpoint ini publik secara jaringan, jadi diamankan dengan CRON_SECRET dan
+ * tidak boleh mengandalkan sesi.
  */
 export async function GET(request: Request) {
   const rahasia = process.env.CRON_SECRET;
-  if (!rahasia || request.headers.get("authorization") !== `Bearer ${rahasia}`) {
+  if (!rahasia || !cocokSecret(request.headers.get("authorization"), `Bearer ${rahasia}`)) {
     return NextResponse.json({ error: "Tidak diizinkan" }, { status: 401 });
   }
 

@@ -21,6 +21,9 @@ async function panggilCronHarian(env: Env) {
   });
 
   if (!res.ok) {
-    console.error(`Cron harian gagal (${res.status}): ${await res.text()}`);
+    const pesan = `Cron harian gagal (${res.status}): ${await res.text()}`;
+    console.error(pesan);
+    // Dilempar supaya invocation tercatat gagal di Cloudflare, bukan sukses semu.
+    throw new Error(pesan);
   }
 }
