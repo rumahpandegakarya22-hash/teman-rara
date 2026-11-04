@@ -7,6 +7,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { activeTenant, trAccount } from "@/db/schema";
 import { hpSama } from "@/lib/phone";
+import { isiEmailKosong } from "@/lib/tenant-write";
 
 const schema = z.object({
   no_kamar: z.string().trim().min(1, "Nomor kamar wajib diisi").max(10),
@@ -90,15 +91,10 @@ export async function klaimAkun(_prev: OnboardingState, formData: FormData): Pro
       });
     }
 
-    // Lengkapi email di data existing kalau memang masih kosong. Ini satu dari
-    // dua kolom yang boleh ditulis Teman Rara (keputusan Owner: email & no_hp).
+    // Lengkapi email di data existing hanya bila masih kosong (satu dari dua
+    // kolom yang boleh ditulis Teman Rara: email & no_hp).
     const emailClerk = user.primaryEmailAddress?.emailAddress;
-    if (emailClerk) {
-      await db
-        .update(activeTenant)
-        .set({ email: emailClerk, updated_at: new Date().toISOString() })
-        .where(eq(activeTenant.id_penghuni, penghuni.id_penghuni));
-    }
+    if (emailClerk) await isiEmailKosong(penghuni.id_penghuni, emailClerk);
   } catch {
     return { error: "Gagal menyimpan data. Coba lagi sebentar." };
   }
