@@ -440,3 +440,14 @@ export const trRateLimit = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.kunci, t.jendela] })],
 );
+
+/** Kode klaim akun sekali pakai (hash SHA-256). Dikelola db/migrations/009_kode_klaim.sql. */
+export const trClaimCode = sqliteTable("tr_claim_code", {
+  id_penghuni: text("id_penghuni")
+    .primaryKey()
+    .references(() => occupancyHistory.id_penghuni),
+  code_hash: text("code_hash").notNull(),
+  expires_at: text("expires_at").notNull(),
+  used_at: text("used_at"),
+  created_at: text("created_at").notNull().default(now),
+});

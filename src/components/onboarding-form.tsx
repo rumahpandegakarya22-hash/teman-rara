@@ -64,6 +64,25 @@ export default function OnboardingForm() {
         </p>
       </div>
 
+      <div>
+        <label htmlFor="kode" className="t-label mb-2 block">
+          Kode klaim
+        </label>
+        <input
+          id="kode"
+          name="kode"
+          required
+          autoComplete="off"
+          autoCapitalize="characters"
+          spellCheck={false}
+          placeholder="8 karakter dari pengelola"
+          className="min-h-12 w-full rounded-md border border-line bg-raised px-4 t-body uppercase tracking-widest focus:border-action"
+        />
+        <p className="t-caption mt-2 text-fg-secondary">
+          Kode sekali pakai yang diberikan pengelola. Belum punya? Minta ke pengelola.
+        </p>
+      </div>
+
       <SubmitButton />
 
       <p className="t-caption flex items-start gap-2 text-fg-secondary">

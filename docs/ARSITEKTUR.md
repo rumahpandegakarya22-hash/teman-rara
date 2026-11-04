@@ -12,6 +12,7 @@ Dokumen ini menggantikan `LAPORAN-PENGERJAAN.md` (arsip per 23 Jul 2026, sebagia
 | Database | Turso (libSQL), **dibagi dengan aplikasi Ops** | Skema Ops dikelola di repo `kost-tiga-dara` |
 | Berkas | Google Drive (OAuth refresh token), disajikan lewat `/api/berkas/[id]` | Tidak publik; cek kepemilikan sebelum stream |
 | Push | Web Push (VAPID) | Hanya push yang aktif; email dan in-app belum ada |
+| Notifikasi pengelola | Telegram Bot (`lib/telegram.ts`) | Pendaftaran, bukti bayar, pengaduan, saran/kritik, pengajuan, dan cron gagal. Secret `TELEGRAM_BOT_TOKEN`, var `TELEGRAM_CHAT_ID` |
 
 ## Hak tulis ke tabel milik Ops
 
@@ -26,7 +27,7 @@ Tabel baru berawalan `tr_`, dibuat lewat `db/migrations/NNN_*.sql` (aditif; dija
 
 ## Migrasi
 
-Urutan: `003` → `004` → `005` → `006` → `007` → `008_rate_limit`. Migrasi **dijalankan manual** di Turso sebelum kode yang memakainya di-deploy. `_replika_*` hanya untuk DB lokal/test.
+Urutan: `003` → `004` → `005` → `006` → `007` → `008_rate_limit` → `009_kode_klaim`. Migrasi **dijalankan manual** di Turso sebelum kode yang memakainya di-deploy. `_replika_*` hanya untuk DB lokal/test.
 
 ## Pengujian
 
@@ -38,6 +39,10 @@ npm run typecheck && npm run lint && npm test
 - CI (`.github/workflows/deploy.yml`) menjalankan ketiganya sebelum build dan deploy.
 - `npm run db:cek-skema` membandingkan `src/db/schema.ts` dengan DB (mingguan lewat `cek-skema.yml`, token read-only).
 - Skrip di `scripts/` yang menulis ke DB menolak jalan terhadap non-file kecuali `--ya-ini-produksi`.
+
+## Klaim akun
+
+Penghuni menghubungkan akun Clerk dengan: nomor kamar + nomor HP + **kode klaim** sekali pakai (8 karakter, berlaku 30 hari, hanya hash-nya disimpan di `tr_claim_code`). Pengelola membuat kode dengan `npm run klaim:buat` dan memulihkan akun yang dibajak dengan `npm run klaim:reset -- --kamar N` (tambahkan `--ya-ini-produksi` untuk Turso). Akun yang sudah tertaut sebelum fitur ini tidak terpengaruh.
 
 ## Keamanan yang berlaku
 

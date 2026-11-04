@@ -15,7 +15,7 @@ describe("cocokSecret", () => {
   });
 });
 
-const telegram = vi.fn(async (_teks: string) => ({ ok: true }));
+const telegram = vi.fn<(teks: string) => Promise<{ ok: boolean }>>(async () => ({ ok: true }));
 const kuota = vi.fn(async () => ({ ok: true, sisa: 0 }));
 vi.mock("@/lib/telegram", () => ({ kirimTelegram: telegram }));
 vi.mock("@/lib/rate-limit", () => ({ cobaPakai: kuota }));

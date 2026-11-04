@@ -29,7 +29,7 @@ vi.mock("next/navigation", () => ({
     throw new Error(`REDIRECT:${url}`);
   },
 }));
-const telegram = vi.fn(async (_teks: string) => ({ ok: true }));
+const telegram = vi.fn<(teks: string) => Promise<{ ok: boolean }>>(async () => ({ ok: true }));
 vi.mock("@/lib/telegram", async (asli) => ({
   ...(await asli<typeof import("@/lib/telegram")>()),
   kirimTelegram: telegram,

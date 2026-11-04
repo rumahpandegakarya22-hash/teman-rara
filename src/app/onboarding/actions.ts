@@ -8,6 +8,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { activeTenant, trAccount } from "@/db/schema";
 import { hpSama } from "@/lib/phone";
+import { pakaiKodeKlaim } from "@/lib/kode-klaim";
 import { isiEmailKosong } from "@/lib/tenant-write";
 import { ambilIp } from "@/lib/ip";
 import { cobaPakai } from "@/lib/rate-limit";
@@ -15,14 +16,17 @@ import { cobaPakai } from "@/lib/rate-limit";
 const schema = z.object({
   no_kamar: z.string().trim().min(1, "Nomor kamar wajib diisi").max(10),
   no_hp: z.string().trim().min(9, "Nomor HP tidak valid").max(20),
+  kode: z.string().trim().min(4, "Kode klaim wajib diisi").max(20),
 });
+
+class KodeKlaimSalah extends Error {}
 
 export type OnboardingState = { error?: string };
 
 /**
  * Klaim akun: hanya penghuni yang sedang tinggal yang boleh punya akun.
- * Bukti kepemilikan = kombinasi nomor kamar dan nomor HP yang cocok dengan
- * baris `active_tenant`. Baris itu dihapus trigger saat check-out, jadi mantan
+ * Bukti kepemilikan = nomor kamar + nomor HP yang cocok dengan baris
+ * `active_tenant`, ditambah kode klaim sekali pakai dari pengelola. Baris itu dihapus trigger saat check-out, jadi mantan
  * penghuni otomatis tidak bisa mendaftar.
  */
 export async function klaimAkun(_prev: OnboardingState, formData: FormData): Promise<OnboardingState> {
@@ -44,11 +48,11 @@ export async function klaimAkun(_prev: OnboardingState, formData: FormData): Pro
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Data yang dikirim tidak valid." };
   }
-  const { no_kamar, no_hp } = parsed.data;
+  const { no_kamar, no_hp, kode } = parsed.data;
 
   // Pesan gagal sengaja disamakan untuk semua sebab, supaya tidak bisa dipakai
   // menebak kamar mana yang terisi atau nomor HP siapa yang terdaftar.
-  const gagal = { error: "Nomor kamar dan nomor HP tidak cocok dengan data penghuni." };
+  const gagal = { error: "Nomor kamar, nomor HP, atau kode klaim tidak cocok dengan data penghuni." };
 
   try {
     const [penghuni] = await db
@@ -62,6 +66,7 @@ export async function klaimAkun(_prev: OnboardingState, formData: FormData): Pro
       .limit(1);
 
     if (!penghuni?.id_penghuni) return gagal;
+    const idPenghuni = penghuni.id_penghuni;
     if (!hpSama(penghuni.no_hp, no_hp)) return gagal;
 
     const [sudahDiklaim] = await db
@@ -75,11 +80,12 @@ export async function klaimAkun(_prev: OnboardingState, formData: FormData): Pro
     }
 
     // Klaim ulang oleh akun yang sama (mis. tombol ditekan dua kali) tidak
-    // dianggap error, cukup lewati insert dan lanjut ke dasbor.
+    // dianggap error dan tidak butuh kode lagi. Klaim pertama memakai kode dan
+    // membuat tautan dalam satu transaksi: kode tidak hangus bila insert gagal.
     if (!sudahDiklaim) {
-      await db.insert(trAccount).values({
-        id_penghuni: penghuni.id_penghuni,
-        clerk_user_id: user.id,
+      await db.transaction(async (tx) => {
+        if (!(await pakaiKodeKlaim(idPenghuni, kode, tx))) throw new KodeKlaimSalah();
+        await tx.insert(trAccount).values({ id_penghuni: idPenghuni, clerk_user_id: user.id });
       });
     }
 
@@ -87,7 +93,8 @@ export async function klaimAkun(_prev: OnboardingState, formData: FormData): Pro
     // kolom yang boleh ditulis Teman Rara: email & no_hp).
     const emailClerk = user.primaryEmailAddress?.emailAddress;
     if (emailClerk) await isiEmailKosong(penghuni.id_penghuni, emailClerk);
-  } catch {
+  } catch (e) {
+    if (e instanceof KodeKlaimSalah) return gagal;
     return { error: "Gagal menyimpan data. Coba lagi sebentar." };
   }
 
