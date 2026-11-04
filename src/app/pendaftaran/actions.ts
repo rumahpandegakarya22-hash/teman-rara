@@ -8,6 +8,7 @@ import { db } from "@/db";
 import { activeTenant, booking, kamar, trPendaftaran } from "@/db/schema";
 import { normalisasi62 } from "@/lib/phone";
 import { simpanGambar, validasiDokumen } from "@/lib/storage";
+import { hariIniWIB, tambahHari } from "@/lib/waktu";
 
 export type KamarOpsi = { no_kamar: number; tipe_kamar: string | null };
 
@@ -17,12 +18,6 @@ export type KamarOpsi = { no_kamar: number; tipe_kamar: string | null };
 const STATUS_MENAHAN = new Set(["check-in", "konfirmasi", "pending"]);
 // Jeda aman setelah tanggal keluar penghuni lama sebelum penghuni baru masuk.
 const BUFFER_HARI = 7;
-
-function tambahHari(tanggal: string, n: number): string {
-  const t = new Date(`${tanggal}T00:00:00Z`);
-  t.setUTCDate(t.getUTCDate() + n);
-  return t.toISOString().slice(0, 10);
-}
 
 /**
  * Kamar yang tersedia untuk rencana masuk `tanggal`.
@@ -39,7 +34,7 @@ function tambahHari(tanggal: string, n: number): string {
  * checkout di DB menghapus barisnya begitu penghuni keluar.
  */
 async function getKamarTersedia(tanggal: string, tipeKamar?: string): Promise<KamarOpsi[]> {
-  const hariIni = new Date().toISOString().slice(0, 10);
+  const hariIni = hariIniWIB();
 
   const [semuaKamar, penghuniAktif, semuaBooking] = await Promise.all([
     db
@@ -212,7 +207,7 @@ export async function kirimPendaftaran(
     return { error: "Kamar itu tidak tersedia pada tanggal itu. Pilih kamar/tanggal lain atau hubungi pengelola." };
   }
 
-  const tanggalBooking = new Date().toISOString().slice(0, 10);
+  const tanggalBooking = hariIniWIB();
   let noBooking = "";
 
   try {

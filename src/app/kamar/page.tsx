@@ -11,6 +11,7 @@ import WifiCard from "@/components/wifi-card";
 import { formatRupiah, formatTanggal } from "@/lib/format";
 import { wajibMasuk } from "@/lib/guard";
 import { getRiwayatBukti, getSesiPenghuni, getTagihanTerbaru } from "@/lib/tenant";
+import { hariIniWIB, selisihHari } from "@/lib/waktu";
 
 export const dynamic = "force-dynamic";
 
@@ -28,9 +29,7 @@ export default async function KamarPage() {
   // Tagihan hanya ditampilkan kalau belum lunas DAN jatuh tempo tinggal
   // <= 7 hari (termasuk yang sudah lewat).
   const HARI_TAMPIL = 7;
-  const sisaHari = tagihan?.periode_akhir
-    ? Math.ceil((new Date(tagihan.periode_akhir).getTime() - Date.now()) / 86_400_000)
-    : null;
+  const sisaHari = tagihan?.periode_akhir ? selisihHari(hariIniWIB(), tagihan.periode_akhir) : null;
   const tampilkanTagihan =
     tagihan != null && tagihan.status !== "lunas" && sisaHari != null && sisaHari <= HARI_TAMPIL;
   const fasilitas = (penghuni.fasilitas ?? "")

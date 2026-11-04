@@ -11,6 +11,7 @@ import {
   trKamarWifi,
   trPaymentProof,
 } from "@/db/schema";
+import { hariIniWIB } from "@/lib/waktu";
 
 export type SesiPenghuni =
   | { status: "tamu" | "belum_klaim" | "berakhir"; penghuni: null }
@@ -130,7 +131,7 @@ export async function getTagihanTerbaru(idPenghuni: string) {
 
   const total = inv.grand_total ?? 0;
   const dibayar = Math.round(bayar?.dibayar ?? 0);
-  const hariIni = new Date().toISOString().slice(0, 10);
+  const hariIni = hariIniWIB();
 
   const status: "lunas" | "sebagian" | "nunggak" | "belum" = inv.tanggal_pembayaran
     ? "lunas"

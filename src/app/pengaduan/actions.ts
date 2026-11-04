@@ -9,6 +9,7 @@ import { feedback, tenantComplain, trComplainPhoto, trComplainSync } from "@/db/
 import { JENIS_MASUKAN, KATEGORI, STATUS_BISA_BATAL, jadiTiket } from "@/lib/kategori";
 import { simpanGambar, validasiGambar } from "@/lib/storage";
 import { getPenghuniAktif } from "@/lib/tenant";
+import { hariIniWIB } from "@/lib/waktu";
 
 const MAKS_FOTO = 3;
 
@@ -43,7 +44,7 @@ export async function kirimPengaduan(
     return { error: parsed.error.issues[0]?.message ?? "Data yang dikirim tidak valid." };
   }
 
-  const tanggalKirim = new Date().toISOString().slice(0, 10);
+  const tanggalKirim = hariIniWIB();
 
   // Saran & Kritik bukan tiket: tidak ada yang perlu dipantau statusnya, jadi
   // masuk tabel `feedback` tanpa foto — sesuai pembagian yang sudah dipakai
@@ -152,7 +153,7 @@ export async function batalkanPengaduan(
     // dipakai membatalkan pengaduan orang lain.
     const hasil = await db
       .update(tenantComplain)
-      .set({ status: "Dibatalkan", resolved_at: new Date().toISOString().slice(0, 10) })
+      .set({ status: "Dibatalkan", resolved_at: hariIniWIB() })
       .where(
         and(
           eq(tenantComplain.id_complain, id),

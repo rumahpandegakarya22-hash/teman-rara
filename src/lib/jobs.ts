@@ -5,6 +5,7 @@ import { invoiceSewa, tenantComplain, trComplainSync, trInvoiceReminderSync } fr
 import { formatRupiah, formatTanggal } from "@/lib/format";
 import { normalisasiStatus } from "@/lib/kategori";
 import { kirimKePenghuni } from "@/lib/push";
+import { hariIniWIB, selisihHari, tambahHari } from "@/lib/waktu";
 
 // Titik pengingat relatif ke periode_akhir: 7/3/1 hari sebelum jatuh tempo,
 // 0 = hari-H, -3/-7 = 3/7 hari setelah (telat). Cron boleh jalan sesering apa
@@ -12,20 +13,15 @@ import { kirimKePenghuni } from "@/lib/push";
 // dobel di hari yang sama.
 const OFFSET_PENGINGAT = [7, 3, 1, 0, -3, -7] as const;
 
-function selisihHari(periodeAkhir: string, hariIni: string) {
-  const MS_PER_HARI = 86_400_000;
-  return Math.round((new Date(periodeAkhir).getTime() - new Date(hariIni).getTime()) / MS_PER_HARI);
-}
-
 /**
  * Pengingat tagihan jatuh tempo di titik H-7/H-3/H-1/H/H+3/H+7.
  * Jatuh tempo memakai `invoice_sewa.periode_akhir`; belum bayar ditandai
  * `tanggal_pembayaran` yang masih NULL, mengikuti konvensi sistem existing.
  */
 export async function jalankanPengingatJatuhTempo() {
-  const hariIni = new Date().toISOString().slice(0, 10);
-  const batasAwal = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
-  const batasAkhir = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
+  const hariIni = hariIniWIB();
+  const batasAwal = tambahHari(hariIni, -7);
+  const batasAkhir = tambahHari(hariIni, 7);
 
   const kandidat = await db
     .select({
@@ -50,7 +46,7 @@ export async function jalankanPengingatJatuhTempo() {
   for (const t of kandidat) {
     if (!t.id_penghuni || !t.periode_akhir) continue;
 
-    const offset = selisihHari(t.periode_akhir, hariIni);
+    const offset = selisihHari(hariIni, t.periode_akhir);
     if (!OFFSET_PENGINGAT.includes(offset as (typeof OFFSET_PENGINGAT)[number])) continue;
     dicek++;
 
