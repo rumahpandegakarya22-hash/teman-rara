@@ -128,4 +128,63 @@ describe("klaimAkun lewat email terverifikasi", () => {
     clerkId = "c-kedua";
     expect(galat(await klaim(form("7", "087777777777", "Budi P7")))).toMatch(/sudah tertaut/);
   });
+
+  it("check-in ulang (id_penghuni baru) dengan akun Clerk lama: tautan dipindah", async () => {
+    clerkId = "c-balik";
+    emailClerk = "budi8@contoh.com";
+    await penghuni("P8", 8, "088888888888", "budi8@contoh.com");
+    await uji.db.insert(occupancyHistory).values({ id_penghuni: "P8-LAMA", nama: "P8", no_kamar: "8", tanggal_mulai: "2025-01-01" });
+    await uji.db.insert(trAccount).values({ id_penghuni: "P8-LAMA", clerk_user_id: "c-balik", revoked_at: "2026-01-01" });
+    expect(await klaim(form("8", "088888888888", "Budi P8"))).toEqual({ redirect: "/kamar" });
+    expect((await akun("P8"))[0].clerk_user_id).toBe("c-balik");
+    expect(await akun("P8-LAMA")).toHaveLength(0);
+  });
+
+  it("akun Clerk masih tertaut ke penghuni aktif lain: ditolak", async () => {
+    clerkId = "c-ganda";
+    emailClerk = "budi9@contoh.com";
+    await penghuni("P9", 9, "089999999990", "budi9@contoh.com");
+    await penghuni("P10", 10, "081010101010", "lain10@contoh.com");
+    await uji.db.insert(trAccount).values({ id_penghuni: "P10", clerk_user_id: "c-ganda" });
+    expect(galat(await klaim(form("9", "089999999990", "Budi P9")))).toMatch(/kamar lain/);
+    expect(await akun("P9")).toHaveLength(0);
+  });
+});
+
+describe("trigger akses akun saat checkout (tabel Ops)", () => {
+  const q = (sql: string, args: (string | number)[] = []) => uji.client.execute({ sql, args });
+  const akunRaw = async (id: string) =>
+    (await q("SELECT revoked_at FROM tr_account WHERE id_penghuni = ?", [id])).rows[0];
+  const pushRaw = async (id: string) =>
+    (await q("SELECT deleted_at FROM tr_push_subscription WHERE id_penghuni = ?", [id])).rows[0];
+
+  async function checkIn(noBooking: string, idPenghuni: string, noKamar: number) {
+    await q("INSERT INTO booking (no_booking, id_penghuni, nama_penyewa, no_hp, kamar_no, tgl_masuk, status_booking) VALUES (?,?,?,?,?,?, 'Check-in')", [
+      noBooking, idPenghuni, `Nama ${idPenghuni}`, "081200000000", noKamar, "2026-02-01",
+    ]);
+  }
+
+  beforeAll(async () => {
+    await import("@/db");
+    await q("INSERT INTO kamar (id_kamar, no_kamar) VALUES ('KTD-81', 81)");
+    await checkIn("B-81", "X1", 81);
+    await q("INSERT INTO tr_account (id_penghuni, clerk_user_id) VALUES ('X1', 'c-x1')");
+    await q("INSERT INTO tr_push_subscription (id, endpoint, p256dh, auth, id_penghuni) VALUES ('s1','https://push/x1','p','a','X1')");
+  });
+
+  it("checkout mencabut tr_account dan mematikan langganan push", async () => {
+    await q("UPDATE booking SET status_booking = 'Check-out' WHERE no_booking = 'B-81'");
+    expect((await akunRaw("X1")).revoked_at).not.toBeNull();
+    expect((await pushRaw("X1")).deleted_at).not.toBeNull();
+  });
+
+  it("checkout dibatalkan (kembali Check-in, id sama): akses pulih", async () => {
+    await q("UPDATE booking SET status_booking = 'Check-in' WHERE no_booking = 'B-81'");
+    expect((await akunRaw("X1")).revoked_at).toBeNull();
+  });
+
+  it("kamar ditimpa check-in penghuni baru: akun penghuni lama dicabut", async () => {
+    await checkIn("B-81b", "X2", 81);
+    expect((await akunRaw("X1")).revoked_at).not.toBeNull();
+  });
 });

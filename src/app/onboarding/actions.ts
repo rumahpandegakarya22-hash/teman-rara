@@ -86,7 +86,27 @@ export async function klaimAkun(_prev: OnboardingState, formData: FormData): Pro
 
     // Klaim ulang oleh akun yang sama (mis. tombol ditekan dua kali) tidak dianggap error.
     if (!sudahDiklaim) {
-      await db.insert(trAccount).values({ id_penghuni: idPenghuni, clerk_user_id: user.id });
+      // clerk_user_id UNIQUE: penghuni yang check-in lagi dapat id_penghuni baru,
+      // jadi tautan lama ke masa tinggal sebelumnya harus dilepas dulu.
+      const [tautanLama] = await db
+        .select({ id_penghuni: trAccount.id_penghuni })
+        .from(trAccount)
+        .where(eq(trAccount.clerk_user_id, user.id))
+        .limit(1);
+      if (tautanLama) {
+        const [masihAktif] = await db
+          .select({ id: activeTenant.id_penghuni })
+          .from(activeTenant)
+          .where(eq(activeTenant.id_penghuni, tautanLama.id_penghuni))
+          .limit(1);
+        if (masihAktif) {
+          return { error: "Akun ini sudah tertaut ke kamar lain. Hubungi pengelola kalau ini keliru." };
+        }
+      }
+      await db.batch([
+        db.delete(trAccount).where(eq(trAccount.clerk_user_id, user.id)),
+        db.insert(trAccount).values({ id_penghuni: idPenghuni, clerk_user_id: user.id }),
+      ]);
     }
   } catch {
     return { error: "Gagal menyimpan data. Coba lagi sebentar." };

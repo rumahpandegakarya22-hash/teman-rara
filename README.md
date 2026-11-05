@@ -60,6 +60,13 @@ npm run typecheck && npm run lint && npm test
 trigger `trg_booking_checkout_upd` menghapus baris `active_tenant` saat check-out,
 sehingga tautan akun dan riwayat pengaduan akan ikut yatim.
 
+Trigger `trg_tr_account_*` (migrasi 010) di `active_tenant` menjaga `revoked_at`:
+baris dihapus atau `id_penghuni`-nya ditimpa → tautan dicabut dan langganan push
+dimatikan; baris muncul lagi dengan id sama (checkout dibatalkan) → tautan pulih.
+Penghuni yang check-in lagi mendapat `id_penghuni` baru; saat klaim, tautan lama
+akun Clerk yang sama dipindahkan. Untuk melepas tautan secara manual, pakai
+`scripts/reset-klaim.ts`, jangan hapus baris langsung di Turso.
+
 ## Siapa boleh punya akun
 
 Hanya penghuni yang sedang tinggal. Pendaftar membuktikan diri dengan nomor kamar
