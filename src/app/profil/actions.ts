@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
 import { activeTenant, trNotificationPreference } from "@/db/schema";
-import { normalisasiHp } from "@/lib/phone";
+import { hpSama, normalisasi62, normalisasiHp } from "@/lib/phone";
 import { kirimKePengelola } from "@/lib/push";
 import { getPenghuniAktif } from "@/lib/tenant";
 
@@ -32,7 +32,8 @@ export async function simpanProfil(_prev: ProfilState, formData: FormData): Prom
     return { error: parsed.error.issues[0]?.message ?? "Data tidak valid." };
   }
 
-  const hpBaru = normalisasiHp(parsed.data.no_hp);
+  // Disimpan dalam format 62xxx, sama dengan pendaftaran dan mayoritas data Ops.
+  const hpBaru = normalisasi62(parsed.data.no_hp);
   try {
     await db
       .update(activeTenant)
@@ -48,7 +49,7 @@ export async function simpanProfil(_prev: ProfilState, formData: FormData): Prom
 
   const perubahan: string[] = [];
   if (penghuni.email !== parsed.data.email) perubahan.push(`Email: ${penghuni.email ?? "-"} → ${parsed.data.email}`);
-  if (penghuni.no_hp !== hpBaru) perubahan.push(`HP: ${penghuni.no_hp ?? "-"} → ${hpBaru}`);
+  if (!hpSama(penghuni.no_hp, hpBaru)) perubahan.push(`HP: ${penghuni.no_hp ?? "-"} → ${hpBaru}`);
   if (perubahan.length > 0) {
     await kirimKePengelola({
       title: "Penghuni ubah data kontak",

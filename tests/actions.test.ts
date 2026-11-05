@@ -255,6 +255,28 @@ describe("simpanProfil", () => {
     expect(pesan).toContain("lama@x.id → baru@x.id");
     expect(pesan).not.toContain("HP:");
   });
+
+  it("nomor sama beda format: tidak ada notifikasi; nomor disimpan format 62", async () => {
+    const { simpanProfil } = await import("@/app/profil/actions");
+    await penghuni("P3", 73);
+    getPenghuniAktif.mockResolvedValue({ id_penghuni: "P3", nama: "P3", no_kamar: 73, email: "p3@x.id", no_hp: "6281333333333" });
+    const f = (hp: string) => {
+      const d = new FormData();
+      d.set("email", "p3@x.id");
+      d.set("no_hp", hp);
+      return d;
+    };
+    const hpTersimpan = async () =>
+      (await uji.db.select().from(activeTenant).where(eq(activeTenant.id_penghuni, "P3")))[0].no_hp;
+
+    await simpanProfil({}, f("081333333333"));
+    expect(telegram).not.toHaveBeenCalled();
+    expect(await hpTersimpan()).toBe("6281333333333");
+
+    await simpanProfil({}, f("0812 4444 4444"));
+    expect(telegram.mock.calls.at(-1)?.[0]).toContain("HP: 6281333333333 → 6281244444444");
+    expect(await hpTersimpan()).toBe("6281244444444");
+  });
 });
 
 describe("pindah kamar dinonaktifkan", () => {
