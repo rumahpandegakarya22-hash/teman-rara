@@ -63,8 +63,8 @@ sehingga tautan akun dan riwayat pengaduan akan ikut yatim.
 ## Siapa boleh punya akun
 
 Hanya penghuni yang sedang tinggal. Pendaftar membuktikan diri dengan nomor kamar
-dan nomor HP yang cocok dengan `active_tenant`, ditambah kode klaim sekali pakai
-dari pengelola (lihat [docs/ARSITEKTUR.md](docs/ARSITEKTUR.md)). Karena trigger
+dan nomor HP yang cocok dengan `active_tenant`, serta email akun yang sudah
+diverifikasi Clerk sama dengan email penghuni (lihat [docs/ARSITEKTUR.md](docs/ARSITEKTUR.md)). Karena trigger
 menghapus baris itu saat check-out, mantan penghuni otomatis tidak bisa mendaftar,
 dan penghuni yang check-out kehilangan akses tanpa perlu langkah manual.
 

@@ -46,6 +46,20 @@ export default function OnboardingForm() {
       </div>
 
       <div>
+        <label htmlFor="nama" className="t-label mb-2 block">
+          Nama
+        </label>
+        <input
+          id="nama"
+          name="nama"
+          required
+          autoComplete="name"
+          placeholder="Nama saat check-in"
+          className="min-h-12 w-full rounded-md border border-line bg-raised px-4 t-body focus:border-action"
+        />
+      </div>
+
+      <div>
         <label htmlFor="no_hp" className="t-label mb-2 block">
           Nomor HP
         </label>
@@ -60,26 +74,7 @@ export default function OnboardingForm() {
           className="min-h-12 w-full rounded-md border border-line bg-raised px-4 t-body focus:border-action"
         />
         <p className="t-caption mt-2 text-fg-secondary">
-          Pakai nomor yang kamu berikan saat check-in.
-        </p>
-      </div>
-
-      <div>
-        <label htmlFor="kode" className="t-label mb-2 block">
-          Kode klaim
-        </label>
-        <input
-          id="kode"
-          name="kode"
-          required
-          autoComplete="off"
-          autoCapitalize="characters"
-          spellCheck={false}
-          placeholder="8 karakter dari pengelola"
-          className="min-h-12 w-full rounded-md border border-line bg-raised px-4 t-body uppercase tracking-widest focus:border-action"
-        />
-        <p className="t-caption mt-2 text-fg-secondary">
-          Kode sekali pakai yang diberikan pengelola. Belum punya? Minta ke pengelola.
+          Pakai nomor yang kamu berikan saat check-in. Email akun yang kamu pakai masuk juga harus sama dengan email saat check-in.
         </p>
       </div>
 

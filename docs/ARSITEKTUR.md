@@ -42,7 +42,7 @@ npm run typecheck && npm run lint && npm test
 
 ## Klaim akun
 
-Penghuni menghubungkan akun Clerk dengan: nomor kamar + nomor HP + **kode klaim** sekali pakai (8 karakter, berlaku 30 hari, hanya hash-nya disimpan di `tr_claim_code`). Pengelola membuat kode dengan `npm run klaim:buat` dan memulihkan akun yang dibajak dengan `npm run klaim:reset -- --kamar N` (tambahkan `--ya-ini-produksi` untuk Turso). Akun yang sudah tertaut sebelum fitur ini tidak terpengaruh.
+Penghuni menghubungkan akun Clerk dengan: nomor kamar + nama (lengkap atau panggilan) + nomor HP + **email yang sudah diverifikasi Clerk sama dengan `active_tenant.email`** (huruf besar/kecil diabaikan; Gmail juga mengabaikan titik dan `+alias`). Email adalah bukti kepemilikan utama; nama dan HP bukan rahasia. Penghuni dengan email kosong di data tidak bisa klaim, perbaiki dulu emailnya di Ops. Mekanisme kode klaim (`tr_claim_code`, `npm run klaim:*`) tidak lagi dipakai alur klaim dan dibiarkan untuk dibersihkan belakangan.
 
 ## Keamanan yang berlaku
 

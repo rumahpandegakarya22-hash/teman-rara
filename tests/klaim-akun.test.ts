@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import { buatDbUji } from "./helpers/db-uji";
 import { activeTenant, kamar, occupancyHistory, trAccount } from "@/db/schema";
@@ -10,9 +10,14 @@ vi.mock("@/db", async () => {
 });
 
 let clerkId = "clerk-1";
+let emailClerk = "";
+let statusEmail = "verified";
 vi.mock("@clerk/nextjs/server", () => ({
   auth: { protect: async () => {} },
-  currentUser: async () => ({ id: clerkId, primaryEmailAddress: { emailAddress: `${clerkId}@x.com` } }),
+  currentUser: async () => ({
+    id: clerkId,
+    emailAddresses: [{ emailAddress: emailClerk, verification: { status: statusEmail } }],
+  }),
 }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers({ "cf-connecting-ip": "9.9.9.9" }) }));
 vi.mock("next/navigation", () => ({
@@ -23,17 +28,25 @@ vi.mock("next/navigation", () => ({
 
 const UMUM = /tidak cocok/;
 
-async function penghuni(id: string, noKamar: number, hp: string) {
+async function penghuni(id: string, noKamar: number, hp: string, email: string, panggilan?: string) {
   await uji.db.insert(kamar).values({ id_kamar: `K${noKamar}`, no_kamar: noKamar });
   await uji.db.insert(occupancyHistory).values({ id_penghuni: id, nama: id, no_kamar: String(noKamar), tanggal_mulai: "2026-01-01" });
-  await uji.db.insert(activeTenant).values({ kamar_id: `K${noKamar}`, id_penghuni: id, nama_lengkap: id, no_kamar: String(noKamar), no_hp: hp });
+  await uji.db.insert(activeTenant).values({
+    kamar_id: `K${noKamar}`,
+    id_penghuni: id,
+    nama_lengkap: `Budi ${id}`,
+    nama_panggilan: panggilan,
+    no_kamar: String(noKamar),
+    no_hp: hp,
+    email,
+  });
 }
 
-const form = (no_kamar: string, no_hp: string, kode?: string) => {
+const form = (no_kamar: string, no_hp: string, nama: string) => {
   const f = new FormData();
   f.set("no_kamar", no_kamar);
   f.set("no_hp", no_hp);
-  if (kode !== undefined) f.set("kode", kode);
+  f.set("nama", nama);
   return f;
 };
 
@@ -48,60 +61,71 @@ async function klaim(f: FormData) {
   }
 }
 const akun = (id: string) => uji.db.select().from(trAccount).where(eq(trAccount.id_penghuni, id));
+const galat = (r: unknown) => (r as { error?: string }).error;
 
-describe("klaimAkun dengan kode klaim", () => {
-  let buatKode: typeof import("@/lib/kode-klaim").buatKodeKlaim;
+describe("klaimAkun lewat email terverifikasi", () => {
   beforeAll(async () => {
     await import("@/db");
-    ({ buatKodeKlaim: buatKode } = await import("@/lib/kode-klaim"));
+  });
+  beforeEach(() => {
+    statusEmail = "verified";
   });
 
-  it("kamar + HP + kode benar: akun tertaut dan kode hangus", async () => {
+  it("email + nama + HP cocok: akun tertaut (email beda huruf, HP beda format)", async () => {
     clerkId = "c-ok";
-    await penghuni("P1", 1, "081111111111");
-    const kode = await buatKode("P1");
-    expect(await klaim(form("1", "+62 811-1111-1111", kode))).toEqual({ redirect: "/kamar" });
+    emailClerk = "BUDI@Contoh.com";
+    await penghuni("P1", 1, "081111111111", "budi@contoh.com");
+    expect(await klaim(form("1", "+62 811-1111-1111", "budi  p1"))).toEqual({ redirect: "/kamar" });
     expect((await akun("P1"))[0].clerk_user_id).toBe("c-ok");
-    clerkId = "c-lain";
-    expect((await klaim(form("1", "081111111111", kode)) as { error?: string }).error).toBeTruthy();
   });
 
-  it("kode salah: pesan seragam, tidak ada akun, kode asli masih berlaku", async () => {
-    clerkId = "c-salah";
-    await penghuni("P2", 2, "082222222222");
-    const kode = await buatKode("P2");
-    expect(((await klaim(form("2", "082222222222", "SALAHSALAH"))) as { error: string }).error).toMatch(UMUM);
-    expect(await akun("P2")).toHaveLength(0);
-    expect(await klaim(form("2", "082222222222", kode))).toEqual({ redirect: "/kamar" });
+  it("gmail: titik dan +alias diabaikan; nama panggilan diterima", async () => {
+    clerkId = "c-gmail";
+    emailClerk = "bu.di+kost@gmail.com";
+    await penghuni("P2", 2, "082222222222", "budi@gmail.com", "Bud");
+    expect(await klaim(form("2", "082222222222", "Bud"))).toEqual({ redirect: "/kamar" });
   });
 
-  it("HP salah dengan kode benar: ditolak dan kode TIDAK hangus", async () => {
-    clerkId = "c-hp";
-    await penghuni("P3", 3, "083333333333");
-    const kode = await buatKode("P3");
-    expect(((await klaim(form("3", "089999999999", kode))) as { error: string }).error).toMatch(UMUM);
-    expect(await klaim(form("3", "083333333333", kode))).toEqual({ redirect: "/kamar" });
+  it("email Clerk tidak sama dengan data penghuni: ditolak, pesan seragam", async () => {
+    clerkId = "c-beda";
+    emailClerk = "orang.lain@contoh.com";
+    await penghuni("P3", 3, "083333333333", "budi3@contoh.com");
+    expect(galat(await klaim(form("3", "083333333333", "Budi P3")))).toMatch(UMUM);
+    expect(await akun("P3")).toHaveLength(0);
   });
 
-  it("tanpa kode: ditolak oleh validasi", async () => {
-    clerkId = "c-nokode";
-    await penghuni("P4", 4, "084444444444");
-    await buatKode("P4");
-    expect(((await klaim(form("4", "084444444444"))) as { error?: string }).error).toBeTruthy();
+  it("email cocok tapi BELUM diverifikasi: ditolak", async () => {
+    clerkId = "c-unverified";
+    emailClerk = "budi4@contoh.com";
+    statusEmail = "unverified";
+    await penghuni("P4", 4, "084444444444", "budi4@contoh.com");
+    expect(galat(await klaim(form("4", "084444444444", "Budi P4")))).toMatch(UMUM);
     expect(await akun("P4")).toHaveLength(0);
   });
 
-  it("penghuni tanpa kode yang pernah dibuat: tidak bisa klaim", async () => {
-    clerkId = "c-tanpa-kode-db";
-    await penghuni("P5", 5, "085555555555");
-    expect(((await klaim(form("5", "085555555555", "ABCDEFGH"))) as { error: string }).error).toMatch(UMUM);
+  it("HP atau nama salah: ditolak walau email cocok", async () => {
+    clerkId = "c-salah";
+    emailClerk = "budi5@contoh.com";
+    await penghuni("P5", 5, "085555555555", "budi5@contoh.com");
+    expect(galat(await klaim(form("5", "089999999999", "Budi P5")))).toMatch(UMUM);
+    expect(galat(await klaim(form("5", "085555555555", "Siapa Saja")))).toMatch(UMUM);
+    expect(await akun("P5")).toHaveLength(0);
   });
 
-  it("akun yang sudah tertaut boleh klaim ulang tanpa kode", async () => {
-    clerkId = "c-ulang";
-    await penghuni("P6", 6, "086666666666");
-    const kode = await buatKode("P6");
-    await klaim(form("6", "086666666666", kode));
-    expect(await klaim(form("6", "086666666666", "TIDAKPERLU"))).toEqual({ redirect: "/kamar" });
+  it("email penghuni kosong: tidak ada yang bisa klaim", async () => {
+    clerkId = "c-kosong";
+    emailClerk = "";
+    await penghuni("P6", 6, "086666666666", "");
+    expect(galat(await klaim(form("6", "086666666666", "Budi P6")))).toMatch(UMUM);
+  });
+
+  it("kamar sudah tertaut ke akun lain: ditolak; akun yang sama boleh klaim ulang", async () => {
+    clerkId = "c-pertama";
+    emailClerk = "budi7@contoh.com";
+    await penghuni("P7", 7, "087777777777", "budi7@contoh.com");
+    expect(await klaim(form("7", "087777777777", "Budi P7"))).toEqual({ redirect: "/kamar" });
+    expect(await klaim(form("7", "087777777777", "Budi P7"))).toEqual({ redirect: "/kamar" });
+    clerkId = "c-kedua";
+    expect(galat(await klaim(form("7", "087777777777", "Budi P7")))).toMatch(/sudah tertaut/);
   });
 });

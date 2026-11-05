@@ -104,24 +104,12 @@ Tanpa langkah ini workflow `cek-skema.yml` gagal saat dijalankan. Tidak mempenga
 
 ---
 
-## Tahap 5. Buat kode klaim untuk penghuni (sebelum deploy)
+## Tahap 5. Klaim akun penghuni (tanpa kode)
 
-Setelah deploy, penghuni yang **belum** menghubungkan akun wajib memakai kode. Yang sudah tertaut tidak terpengaruh.
+Penghuni mendaftar sendiri di `/onboarding` dengan nomor kamar, nama, nomor HP, dan **email akun yang sama dengan email saat check-in**. Tidak ada kode yang perlu dibagikan. Data produksi sudah dicek: 29 dari 29 penghuni aktif punya email valid dan unik.
 
-- [ ] Buat kode untuk semua penghuni aktif yang belum punya akun (memakai `DATABASE_URL` dari `.env`, yaitu produksi):
-  ```bash
-  npm run klaim:buat -- --ya-ini-produksi
-  ```
-  Output berupa tabel `KAMAR  NAMA  KODE`. **Kode hanya tampil sekali** (di database hanya tersimpan hash-nya). Salin ke tempat aman, lalu cetak jadi kartu atau kirim lewat WhatsApp pribadi ke tiap penghuni.
-- [ ] Bagikan kode ke masing-masing penghuni. Kode berlaku **30 hari** dan sekali pakai.
-
-Rutinitas selanjutnya:
-
-| Situasi | Perintah |
-|---|---|
-| Penghuni baru check-in | `npm run klaim:buat -- --kamar 12 --ya-ini-produksi` |
-| Kode hilang atau kedaluwarsa | perintah yang sama dengan `--kamar N` (membuat kode baru, menimpa yang lama) |
-| Akun dibajak atau penghuni ganti akun | `npm run klaim:reset -- --kamar 12 --ya-ini-produksi` (memutus tautan, mematikan push, memberi kode baru) |
+- [ ] Di dashboard Clerk, pastikan metode login **Email verification code** atau **Google** aktif. Penghuni dengan email UGM (2 orang) perlu kode email, kecuali akun Google mereka memakai alamat UGM itu.
+- [ ] Beri tahu penghuni: masuk memakai email yang sama dengan saat check-in.
 
 ---
 
