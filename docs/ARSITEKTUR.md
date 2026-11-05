@@ -12,7 +12,7 @@ Dokumen ini menggantikan `LAPORAN-PENGERJAAN.md` (arsip per 23 Jul 2026, sebagia
 | Database | Turso (libSQL), **dibagi dengan aplikasi Ops** | Skema Ops dikelola di repo `kost-tiga-dara` |
 | Berkas | Google Drive (OAuth refresh token), disajikan lewat `/api/berkas/[id]` | Tidak publik; cek kepemilikan sebelum stream |
 | Push | Web Push (VAPID) | Hanya push yang aktif; email dan in-app belum ada |
-| Notifikasi pengelola | Telegram Bot (`lib/telegram.ts`) | Pendaftaran, bukti bayar, pengaduan, saran/kritik, pengajuan, dan cron gagal. Secret `TELEGRAM_BOT_TOKEN`, var `TELEGRAM_CHAT_ID` |
+| Notifikasi pengelola | Telegram Bot (`lib/telegram.ts`) | Pendaftaran, bukti bayar, pengaduan, saran/kritik, pengajuan, dan cron gagal. Secret `TELEGRAM_BOT_TOKEN` dan `TELEGRAM_CHAT_ID` (di worker utama dan cron-worker). Perintah `wrangler` untuk cron-worker harus memakai `--name teman-rara-cron` atau `--config cron-worker/wrangler.toml` |
 
 ## Hak tulis ke tabel milik Ops
 

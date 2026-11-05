@@ -52,33 +52,44 @@ Kedua migrasi aditif (hanya membuat tabel baru), aman diulang karena memakai `IF
   Cari `"chat":{"id": ...}`. Itu **chat id** (grup biasanya negatif, mis. `-1001234567890`). Jangan bagikan URL itu, isinya memuat token.
 - [ ] Tes kirim manual (ganti nilai):
   ```bash
-  curl -s "https://api.telegram.org/botTOKEN/sendMessage" -d chat_id=CHAT_ID -d text="Tes Teman Rara"
+  curl.exe -s "https://api.telegram.org/botTOKEN/sendMessage" -d chat_id=CHAT_ID -d text="Tes Teman Rara"
   ```
   Pesan harus muncul di chat.
 
 ---
 
-## Tahap 3. Secret dan variabel di Cloudflare dan GitHub
+## Tahap 3. Secret di Cloudflare
 
-**Aplikasi utama** (jalankan di folder `teman-rara`):
+**Peringatan:** perintah `wrangler` yang dijalankan dari dalam folder `cron-worker` tanpa `--name` ternyata tetap mengenai worker utama `teman-rara`. Selalu jalankan dari folder `teman-rara` (root) dan sebut worker-nya dengan `--name`.
+
+Chat id disimpan sebagai **secret** (bukan variabel), di kedua worker. Tidak ada variabel GitHub yang perlu ditambah.
+
+Cek dulu apa yang sudah terpasang (hanya menampilkan nama, bukan nilai):
+
+```bash
+npx wrangler secret list --name teman-rara
+npx wrangler secret list --name teman-rara-cron
+```
+
+**Worker utama `teman-rara`:** harus memuat `TELEGRAM_BOT_TOKEN` dan `TELEGRAM_CHAT_ID`.
 
 - [ ] ```bash
-  npx wrangler secret put TELEGRAM_BOT_TOKEN
+  npx wrangler secret put TELEGRAM_BOT_TOKEN --name teman-rara
+  npx wrangler secret put TELEGRAM_CHAT_ID --name teman-rara
   ```
-  (tempel token saat diminta)
-- [ ] Jika di Tahap 0 kamu membuat ulang refresh token Google: `npx wrangler secret put GOOGLE_REFRESH_TOKEN`.
+  (nilai ditempel saat diminta; lewati yang sudah terdaftar dan nilainya benar)
+- [ ] Hanya jika di Tahap 0 kamu membuat ulang refresh token Google:
+  ```bash
+  npx wrangler secret put GOOGLE_REFRESH_TOKEN --name teman-rara
+  ```
 
-**Cron worker** (folder `cron-worker`, nama worker `teman-rara-cron`):
+**Cron worker `teman-rara-cron`:** harus memuat `CRON_SECRET` (sudah ada), `TELEGRAM_BOT_TOKEN`, dan `TELEGRAM_CHAT_ID`.
 
 - [ ] ```bash
-  cd cron-worker
-  npx wrangler secret put TELEGRAM_BOT_TOKEN
-  npx wrangler secret put TELEGRAM_CHAT_ID
+  npx wrangler secret put TELEGRAM_BOT_TOKEN --name teman-rara-cron
+  npx wrangler secret put TELEGRAM_CHAT_ID --name teman-rara-cron
   ```
-
-**GitHub** (repo → *Settings* → *Environments* → environment `CLOUDFLARE_API_TOKEN`):
-
-- [ ] Tambah **Variable** `TELEGRAM_CHAT_ID` = chat id dari Tahap 2.
+- [ ] Cek ulang dengan `secret list --name teman-rara-cron`; harus ada 3 nama di atas.
 
 ---
 
@@ -125,9 +136,9 @@ Rutinitas selanjutnya:
 - [ ] Pantau tab *Actions*: job harus hijau, termasuk 3 langkah baru (typecheck, lint, test) sebelum build.
 - [ ] **Deploy ulang cron-worker** (CI hanya men-deploy aplikasi utama, bukan cron-worker):
   ```bash
-  cd cron-worker
-  npx wrangler deploy
+  npx wrangler deploy --config cron-worker/wrangler.toml
   ```
+  (dijalankan dari folder `teman-rara`; jangan `cd cron-worker` lalu `wrangler deploy` tanpa `--config`, karena bisa mengenai worker utama)
   Ini memasang perubahan cron: error dilempar saat gagal, peringatan Telegram, dan Workers Logs.
 
 Jika ada masalah serius setelah deploy: `git revert` merge commit-nya lalu push. Tabel baru boleh dibiarkan.
