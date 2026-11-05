@@ -1,6 +1,6 @@
 # Tugas manual sebelum dan sesudah deploy
 
-Semua kode ada di branch `perbaikan-audit` (belum di-push). Urutan di bawah **penting**: ada dua migrasi yang harus jalan sebelum kodenya, dan satu fitur (kode klaim) yang butuh kode dibagikan sebelum penghuni baru bisa klaim akun.
+Semua kode ada di branch `perbaikan-audit` (belum di-push). Urutan di bawah **penting**: migrasi rate limit harus jalan sebelum kodenya (kalau terlambat, rate limit hanya nonaktif sementara).
 
 Perintah `turso` dan `npm` dijalankan dari terminal di folder `teman-rara`. Jangan tempel token atau secret ke chat.
 
@@ -23,23 +23,21 @@ Memakai skrip `scripts/migrasi.mjs` (tidak perlu Turso CLI; CLI-nya tidak menduk
   ```bash
   node --env-file=.env scripts/migrasi.mjs --cek
   ```
-  Sebelum migrasi harus keluar `BELUM tr_rate_limit` dan `BELUM tr_claim_code`.
+  Sebelum migrasi harus keluar `BELUM tr_rate_limit`.
 - [ ] Jalankan migrasi rate limit:
   ```bash
   node --env-file=.env scripts/migrasi.mjs db/migrations/008_rate_limit.sql --ya-ini-produksi
   ```
-- [ ] Jalankan migrasi kode klaim:
-  ```bash
-  node --env-file=.env scripts/migrasi.mjs db/migrations/009_kode_klaim.sql --ya-ini-produksi
-  ```
-- [ ] Cek ulang. Harus keluar `ADA tr_rate_limit` dan `ADA tr_claim_code`:
+- [ ] Cek ulang. Harus keluar `ADA tr_rate_limit`:
   ```bash
   node --env-file=.env scripts/migrasi.mjs --cek
   ```
 
-(Alternatif tanpa terminal: dashboard Turso → database → *SQL console/Shell*, tempel isi kedua file SQL.)
+(Alternatif tanpa terminal: dashboard Turso → database → *SQL console/Shell*, tempel isi file SQL.)
 
-Kedua migrasi aditif (hanya membuat tabel baru), aman diulang karena memakai `IF NOT EXISTS`.
+Migrasi ini aditif (hanya membuat tabel baru), aman diulang karena memakai `IF NOT EXISTS`.
+
+> `009_kode_klaim.sql` **tidak perlu dijalankan lagi**: klaim akun memakai email terverifikasi, bukan kode. Di produksi tabel `tr_claim_code` sudah terlanjur dibuat (kosong, tidak berbahaya); boleh di-DROP kapan saja.
 
 ---
 
@@ -110,6 +108,11 @@ Penghuni mendaftar sendiri di `/onboarding` dengan nomor kamar, nama, nomor HP, 
 
 - [ ] Di dashboard Clerk, pastikan metode login **Email verification code** atau **Google** aktif. Penghuni dengan email UGM (2 orang) perlu kode email, kecuali akun Google mereka memakai alamat UGM itu.
 - [ ] Beri tahu penghuni: masuk memakai email yang sama dengan saat check-in.
+- [ ] **Kamar 2:** akunnya berstatus *revoked* sejak 11 Agustus 2026 (2 menit setelah klaim), sehingga penghuninya tidak bisa masuk. Kalau itu bukan disengaja, reset tautannya supaya bisa klaim ulang:
+  ```bash
+  npm run klaim:reset -- --kamar 2 --ya-ini-produksi
+  ```
+  Perintah ini menghapus tautan akun dan mematikan langganan push kamar itu. Pakai perintah yang sama kapan pun penghuni ganti akun atau akunnya perlu diputus.
 
 ---
 
@@ -139,7 +142,7 @@ Pakai HP, bukan hanya laptop.
 
 - [ ] **Telegram:** kirim satu pengaduan dari akun penghuni uji. Pesan "Pengaduan baru ..." muncul di grup pengelola.
 - [ ] **Kompres foto:** unggah bukti bayar dengan foto langsung dari kamera (3 MB atau lebih). Harus berhasil tanpa pesan "terlalu besar".
-- [ ] **Kode klaim:** dengan akun Clerk baru (atau akun uji), buka `/onboarding`, coba kode yang salah (harus ditolak dengan pesan seragam), lalu kode yang benar (masuk ke `/kamar`).
+- [ ] **Klaim akun:** dengan akun Clerk uji, buka `/onboarding`. Email yang tidak sama dengan data penghuni harus ditolak dengan pesan seragam. Email yang sama (terverifikasi) harus masuk ke `/kamar`.
 - [ ] **Service worker:** buka `/kamar`, matikan internet/mode pesawat, muat ulang. Harus tampil halaman offline, **bukan** data kamar.
 - [ ] **Cron:** buka dashboard Cloudflare → *Workers & Pages* → `teman-rara-cron` → *Logs*. Pastikan tiap 15 menit ada invocation tanpa error. Hal yang sama untuk `teman-rara` (log aplikasi).
 - [ ] **Cek skema:** GitHub → *Actions* → *Cek drift skema* → *Run workflow*. Harus hijau.

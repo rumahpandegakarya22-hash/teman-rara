@@ -1,10 +1,10 @@
-// Reset klaim akun satu kamar (mis. akun dibajak atau penghuni ganti akun Clerk):
-// putuskan tautan akun, matikan langganan push, lalu buat kode klaim baru.
+// Putuskan tautan akun satu kamar (penghuni ganti akun Clerk, atau akun yang
+// sudah di-revoke): hapus tr_account dan matikan langganan push. Setelah itu
+// penghuni bisa klaim ulang lewat /onboarding.
 //   npm run klaim:reset -- --kamar 12 --ya-ini-produksi
 import { eq } from "drizzle-orm";
 import { db } from "../src/db";
 import { activeTenant, trAccount, trPushSubscription } from "../src/db/schema";
-import { buatKodeKlaim } from "../src/lib/kode-klaim";
 import { wajibIzinProduksi } from "./_guard.mjs";
 
 async function main() {
@@ -25,8 +25,7 @@ async function main() {
     .update(trPushSubscription)
     .set({ deleted_at: new Date().toISOString() })
     .where(eq(trPushSubscription.id_penghuni, p.id));
-  const kode = await buatKodeKlaim(p.id);
-  console.log(`Kamar ${kamar} (${p.nama}) direset.\nKode klaim baru: ${kode}  (30 hari, sekali pakai)`);
+  console.log(`Kamar ${kamar} (${p.nama}) direset. Penghuni bisa klaim ulang lewat /onboarding.`);
 }
 
 main().then(() => process.exit(0), (e) => { console.error(e); process.exit(1); });

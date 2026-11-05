@@ -42,7 +42,7 @@ npm run typecheck && npm run lint && npm test
 
 ## Klaim akun
 
-Penghuni menghubungkan akun Clerk dengan: nomor kamar + nama (lengkap atau panggilan) + nomor HP + **email yang sudah diverifikasi Clerk sama dengan `active_tenant.email`** (huruf besar/kecil diabaikan; Gmail juga mengabaikan titik dan `+alias`). Email adalah bukti kepemilikan utama; nama dan HP bukan rahasia. Penghuni dengan email kosong di data tidak bisa klaim, perbaiki dulu emailnya di Ops. Mekanisme kode klaim (`tr_claim_code`, `npm run klaim:*`) tidak lagi dipakai alur klaim dan dibiarkan untuk dibersihkan belakangan.
+Penghuni menghubungkan akun Clerk dengan: nomor kamar + nama (lengkap atau panggilan) + nomor HP + **email yang sudah diverifikasi Clerk sama dengan `active_tenant.email`** (huruf besar/kecil diabaikan; Gmail juga mengabaikan titik dan `+alias`). Email adalah bukti kepemilikan utama; nama dan HP bukan rahasia. Penghuni dengan email kosong di data tidak bisa klaim, perbaiki dulu emailnya di Ops. Mekanisme kode klaim sudah dihapus dari kode; tabel `tr_claim_code` di produksi kosong dan boleh di-DROP. Untuk memutus tautan akun (ganti akun Clerk, akun revoked): `npm run klaim:reset -- --kamar N --ya-ini-produksi`.
 
 ## Keamanan yang berlaku
 

@@ -360,7 +360,7 @@ Dasar rekomendasi di bawah mengikuti audit. Ganti bila pemilik memilih opsi lain
 - [ ] **Step 6:** `npm test`. PASS. Uji manual: kirim satu pengaduan di staging dan konfirmasi pesan sampai.
 - [ ] **Step 7:** Commit `feat(notif): notifikasi pengelola lewat Telegram`.
 
-### Task 17: Kode klaim akun (E4, menutup B1) **[GATE: skema + auth; keputusan #2]**
+### Task 17: Kode klaim akun (DIGANTI, tidak dipakai: klaim lewat email terverifikasi Clerk; lihat docs/ARSITEKTUR.md) (E4, menutup B1) **[GATE: skema + auth; keputusan #2]**
 
 Opsi A dipilih sebagai rekomendasi (tanpa biaya gateway). Bila pemilik memilih OTP WhatsApp, task ini diganti plan terpisah.
 

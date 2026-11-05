@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import { createClient } from "@libsql/client";
 import { wajibIzinProduksi } from "./_guard.mjs";
 
-const TABEL = ["tr_rate_limit", "tr_claim_code"];
+const TABEL = ["tr_rate_limit"];
 const db = createClient({
   url: process.env.DATABASE_URL,
   authToken: process.env.DATABASE_AUTH_TOKEN || undefined,

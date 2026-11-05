@@ -16,7 +16,6 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "db:cek-skema": "tsx scripts/cek-skema.ts",
-    "klaim:buat": "tsx --env-file=.env scripts/buat-kode-klaim.ts",
     "klaim:reset": "tsx --env-file=.env scripts/reset-klaim.ts"
   },
   "dependencies": {
