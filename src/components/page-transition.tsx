@@ -12,10 +12,14 @@ const variants: Variants = {
 /** Item 1 — layer transisi halaman: fade + slide tipis tiap ganti route. */
 export default function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  // Clerk berpindah langkah lewat sub-path (/daftar/verify-email-address dst).
+  // Kalau key ikut berubah, <SignUp>/<SignIn> dibongkar ulang dan balik ke langkah awal.
+  const seg = pathname.split("/")[1];
+  const key = seg === "masuk" || seg === "daftar" ? `/${seg}` : pathname;
 
   return (
     <AnimatePresence mode="wait" initial={false}>
-      <motion.div key={pathname} variants={variants} initial="initial" animate="animate" exit="exit">
+      <motion.div key={key} variants={variants} initial="initial" animate="animate" exit="exit">
         {children}
       </motion.div>
     </AnimatePresence>
