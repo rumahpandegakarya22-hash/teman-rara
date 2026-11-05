@@ -6,10 +6,10 @@ import { simpanPreferensi } from "@/app/profil/actions";
 
 type Preferensi = { push: boolean; email: boolean; in_app: boolean };
 
+// Hanya push yang benar-benar dikirim (lib/push.ts). Toggle email dan in-app
+// disembunyikan sampai fiturnya ada; kolomnya di DB tetap disimpan.
 const JENIS: { kunci: keyof Preferensi; label: string; keterangan: string }[] = [
   { kunci: "push", label: "Notifikasi Push", keterangan: "Kabar langsung di layar ponsel." },
-  { kunci: "email", label: "Notifikasi Email", keterangan: "Ringkasan dikirim ke alamat email." },
-  { kunci: "in_app", label: "Notifikasi Dalam Aplikasi", keterangan: "Penanda saat membuka aplikasi." },
 ];
 
 export default function PengaturanNotifikasi({ awal }: { awal: Preferensi }) {

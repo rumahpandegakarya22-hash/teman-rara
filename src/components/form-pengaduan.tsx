@@ -16,6 +16,7 @@ import {
 } from "@/lib/kategori";
 import { FlowButton } from "@/components/ui/flow-button";
 import { UploadCardShell } from "@/components/ui/file-upload-card";
+import { kompresGambar } from "@/lib/kompres-gambar";
 
 const MAKS_FOTO = 3;
 
@@ -49,10 +50,11 @@ export default function FormPengaduan() {
     input.click();
   };
 
-  const tambahBerkas = (dipilih: File[]) => {
+  const tambahBerkas = async (dipilih: File[]) => {
     if (dipilih.length === 0) return;
+    const kecil = await Promise.all(dipilih.map((f) => kompresGambar(f)));
     setPratinjau((lama) =>
-      [...lama, ...dipilih.map((file) => ({ url: URL.createObjectURL(file), file }))].slice(0, MAKS_FOTO),
+      [...lama, ...kecil.map((file) => ({ url: URL.createObjectURL(file), file }))].slice(0, MAKS_FOTO),
     );
   };
 
@@ -168,7 +170,7 @@ export default function FormPengaduan() {
         <input
           ref={fileRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/jpeg,image/png"
           multiple
           onChange={tambahFoto}
           className="sr-only"
@@ -213,7 +215,7 @@ export default function FormPengaduan() {
           <UploadCardShell
             judul="Foto bukti"
             deskripsi={`Ambil foto langsung atau pilih dari galeri (maks ${MAKS_FOTO})`}
-            petunjuk="JPG, PNG, atau WebP."
+            petunjuk="JPG atau PNG. Foto dikecilkan otomatis."
             onDropFiles={tambahBerkas}
           >
             <div className="flex gap-3">

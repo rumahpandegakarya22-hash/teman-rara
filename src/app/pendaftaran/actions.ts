@@ -7,7 +7,11 @@ import { z } from "zod";
 import { db } from "@/db";
 import { activeTenant, booking, kamar, trPendaftaran } from "@/db/schema";
 import { normalisasi62 } from "@/lib/phone";
-import { simpanGambar, validasiDokumen } from "@/lib/storage";
+import { simpanGambar, validasiBerkas } from "@/lib/storage";
+import { hariIniWIB, tambahHari } from "@/lib/waktu";
+import { ambilIp } from "@/lib/ip";
+import { cobaPakai } from "@/lib/rate-limit";
+import { kirimKePengelola } from "@/lib/push";
 
 export type KamarOpsi = { no_kamar: number; tipe_kamar: string | null };
 
@@ -17,12 +21,6 @@ export type KamarOpsi = { no_kamar: number; tipe_kamar: string | null };
 const STATUS_MENAHAN = new Set(["check-in", "konfirmasi", "pending"]);
 // Jeda aman setelah tanggal keluar penghuni lama sebelum penghuni baru masuk.
 const BUFFER_HARI = 7;
-
-function tambahHari(tanggal: string, n: number): string {
-  const t = new Date(`${tanggal}T00:00:00Z`);
-  t.setUTCDate(t.getUTCDate() + n);
-  return t.toISOString().slice(0, 10);
-}
 
 /**
  * Kamar yang tersedia untuk rencana masuk `tanggal`.
@@ -39,7 +37,7 @@ function tambahHari(tanggal: string, n: number): string {
  * checkout di DB menghapus barisnya begitu penghuni keluar.
  */
 async function getKamarTersedia(tanggal: string, tipeKamar?: string): Promise<KamarOpsi[]> {
-  const hariIni = new Date().toISOString().slice(0, 10);
+  const hariIni = hariIniWIB();
 
   const [semuaKamar, penghuniAktif, semuaBooking] = await Promise.all([
     db
@@ -109,6 +107,10 @@ const tanggalSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Tanggal tidak val
 
 /** Dipanggil langsung dari form (bukan submit) saat pendaftar memilih tanggal + tipe kamar. */
 export async function cekKetersediaan(tanggal: string, tipeKamar: string): Promise<KetersediaanState> {
+  const ip = ambilIp(await headers());
+  if (!(await cobaPakai(`ketersediaan:${ip}`, 30, 60)).ok) {
+    return { kamar: [], error: "Terlalu banyak permintaan. Coba lagi sebentar." };
+  }
   const parsedTanggal = tanggalSchema.safeParse(tanggal);
   if (!parsedTanggal.success || !tipeKamar.trim()) {
     return { kamar: [], error: "Isi tanggal dan tipe kamar dulu." };
@@ -151,22 +153,6 @@ const schema = z
 
 export type PendaftaranState = { error?: string };
 
-// Batas kiriman per IP. Form ini publik, jadi perlu rem sederhana.
-const jejak = new Map<string, { jumlah: number; sampai: number }>();
-const MAKS = 3;
-const JENDELA_MS = 60 * 60_000;
-
-function lewatBatas(ip: string) {
-  const kini = Date.now();
-  const c = jejak.get(ip);
-  if (!c || c.sampai < kini) {
-    jejak.set(ip, { jumlah: 1, sampai: kini + JENDELA_MS });
-    return false;
-  }
-  c.jumlah += 1;
-  return c.jumlah > MAKS;
-}
-
 /** Format BK-YYMM-XXX; YYMM dari tanggal booking, XXX urut per bulan. Dipanggil di dalam transaksi. */
 async function buatNoBooking(tx: Pick<typeof db, "select">, tanggalBooking: string) {
   const yymm = tanggalBooking.slice(2, 4) + tanggalBooking.slice(5, 7);
@@ -182,8 +168,8 @@ export async function kirimPendaftaran(
   _prev: PendaftaranState,
   formData: FormData,
 ): Promise<PendaftaranState> {
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "lokal";
-  if (lewatBatas(ip)) {
+  const ip = ambilIp(await headers());
+  if (!(await cobaPakai(`pendaftaran:${ip}`, 3, 3600)).ok) {
     return { error: "Terlalu banyak pengiriman. Coba lagi satu jam lagi atau hubungi pengelola." };
   }
 
@@ -199,7 +185,7 @@ export async function kirimPendaftaran(
     return { error: "Scan identitas dan bukti pembayaran DP wajib diunggah." };
   }
   for (const f of [identitas, buktiDp]) {
-    const cek = validasiDokumen(f);
+    const cek = await validasiBerkas(f);
     if (!cek.ok) return { error: cek.pesan };
   }
 
@@ -212,7 +198,7 @@ export async function kirimPendaftaran(
     return { error: "Kamar itu tidak tersedia pada tanggal itu. Pilih kamar/tanggal lain atau hubungi pengelola." };
   }
 
-  const tanggalBooking = new Date().toISOString().slice(0, 10);
+  const tanggalBooking = hariIniWIB();
   let noBooking = "";
 
   try {
@@ -274,6 +260,11 @@ export async function kirimPendaftaran(
     }
     return { error: "Gagal menyimpan pendaftaran. Coba lagi sebentar." };
   }
+
+  await kirimKePengelola({
+    title: "Pendaftaran baru",
+    body: `${d.nama_lengkap} · Kamar ${d.no_kamar} · masuk ${d.rencana_masuk} (${noBooking})`,
+  });
 
   redirect(`/pendaftaran/terkirim?no=${encodeURIComponent(noBooking)}`);
 }

@@ -9,6 +9,7 @@ import { trCheckoutRequest } from "@/db/schema";
 import { adaCheckoutMenunggu } from "@/lib/pengajuan";
 import { kirimKePengelola } from "@/lib/push";
 import { getPenghuniAktif } from "@/lib/tenant";
+import { hariIniWIB } from "@/lib/waktu";
 
 const schema = z.object({
   tanggal_checkout: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Tanggal rencana keluar tidak valid"),
@@ -30,7 +31,7 @@ export async function kirimPengajuanCheckout(
   const d = parsed.data;
 
   // Tanggal keluar tidak boleh di masa lalu.
-  if (d.tanggal_checkout < new Date().toISOString().slice(0, 10)) {
+  if (d.tanggal_checkout < hariIniWIB()) {
     return { error: "Tanggal rencana keluar tidak boleh sebelum hari ini." };
   }
 

@@ -6,23 +6,25 @@ export const UKURAN_MAKS = 2 * 1024 * 1024; // 2 MB
 
 export type HasilValidasi = { ok: true } | { ok: false; pesan: string };
 
-/** Validasi server-side. Jangan pernah percaya atribut `accept` di input file. */
-export function validasiGambar(file: File): HasilValidasi {
-  if (file.size === 0) return { ok: false, pesan: "Berkas kosong." };
-  if (file.size > UKURAN_MAKS) return { ok: false, pesan: "Ukuran file maksimal 2 MB." };
-  if (!TIPE_DIIZINKAN.includes(file.type as (typeof TIPE_DIIZINKAN)[number])) {
-    return { ok: false, pesan: "Format harus JPG, PNG, atau PDF." };
-  }
-  return { ok: true };
-}
+// Tanda tangan byte awal tiap tipe. `file.type` dikirim klien dan bisa dipalsukan.
+const MAGIC: Record<(typeof TIPE_DIIZINKAN)[number], number[]> = {
+  "image/jpeg": [0xff, 0xd8, 0xff],
+  "image/png": [0x89, 0x50, 0x4e, 0x47],
+  "application/pdf": [0x25, 0x50, 0x44, 0x46],
+};
 
-/** Dokumen (KTP, bukti DP) boleh PDF selain gambar. */
-export function validasiDokumen(file: File): HasilValidasi {
+/** Validasi server-side: ukuran, tipe, dan isi berkas harus cocok. */
+export async function validasiBerkas(file: File): Promise<HasilValidasi> {
   if (file.size === 0) return { ok: false, pesan: "Berkas kosong." };
-  if (file.size > UKURAN_MAKS) return { ok: false, pesan: "Ukuran berkas maksimal 5 MB." };
-  const boleh = [...TIPE_DIIZINKAN, "application/pdf"] as readonly string[];
-  if (!boleh.includes(file.type)) {
-    return { ok: false, pesan: "Format harus JPG, PNG, WebP, atau PDF." };
+  if (file.size > UKURAN_MAKS) {
+    return { ok: false, pesan: `Ukuran file maksimal ${UKURAN_MAKS / 1024 / 1024} MB.` };
+  }
+  const tipe = file.type as (typeof TIPE_DIIZINKAN)[number];
+  if (!TIPE_DIIZINKAN.includes(tipe)) return { ok: false, pesan: "Format harus JPG, PNG, atau PDF." };
+
+  const awal = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+  if (!MAGIC[tipe].every((b, i) => awal[i] === b)) {
+    return { ok: false, pesan: "Isi berkas tidak sesuai formatnya. Pilih ulang berkasnya." };
   }
   return { ok: true };
 }

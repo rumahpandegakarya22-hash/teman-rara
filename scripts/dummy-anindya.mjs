@@ -8,6 +8,9 @@
 // Buat data:    node --env-file=.env scripts/dummy-anindya.mjs
 // Hapus data:   node --env-file=.env scripts/dummy-anindya.mjs --hapus
 import { createClient } from "@libsql/client";
+import { wajibIzinProduksi } from "./_guard.mjs";
+
+wajibIzinProduksi();
 
 const db = createClient({
   url: process.env.DATABASE_URL,

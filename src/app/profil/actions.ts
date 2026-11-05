@@ -6,6 +6,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { activeTenant, trNotificationPreference } from "@/db/schema";
 import { normalisasiHp } from "@/lib/phone";
+import { kirimKePengelola } from "@/lib/push";
 import { getPenghuniAktif } from "@/lib/tenant";
 
 /**
@@ -31,17 +32,28 @@ export async function simpanProfil(_prev: ProfilState, formData: FormData): Prom
     return { error: parsed.error.issues[0]?.message ?? "Data tidak valid." };
   }
 
+  const hpBaru = normalisasiHp(parsed.data.no_hp);
   try {
     await db
       .update(activeTenant)
       .set({
         email: parsed.data.email,
-        no_hp: normalisasiHp(parsed.data.no_hp),
+        no_hp: hpBaru,
         updated_at: new Date().toISOString(),
       })
       .where(eq(activeTenant.id_penghuni, penghuni.id_penghuni));
   } catch {
     return { error: "Gagal menyimpan perubahan." };
+  }
+
+  const perubahan: string[] = [];
+  if (penghuni.email !== parsed.data.email) perubahan.push(`Email: ${penghuni.email ?? "-"} → ${parsed.data.email}`);
+  if (penghuni.no_hp !== hpBaru) perubahan.push(`HP: ${penghuni.no_hp ?? "-"} → ${hpBaru}`);
+  if (perubahan.length > 0) {
+    await kirimKePengelola({
+      title: "Penghuni ubah data kontak",
+      body: [`${penghuni.nama} (Kamar ${penghuni.no_kamar})`, ...perubahan].join("\n"),
+    });
   }
 
   revalidatePath("/profil");

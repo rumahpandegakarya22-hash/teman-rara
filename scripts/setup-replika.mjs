@@ -44,7 +44,14 @@ function pecahStatement(sql) {
 // dijalankan sekali di database kosong. Migrasi 003 sendiri idempoten dan bisa
 // diulang: `node scripts/setup-replika.mjs --hanya-003`.
 const hanyaTr = process.argv.includes("--hanya-tr");
-const migrasiTr = ["db/migrations/003_teman_rara.sql", "db/migrations/004_pendaftaran.sql"];
+const migrasiTr = [
+  "db/migrations/003_teman_rara.sql",
+  "db/migrations/004_pendaftaran.sql",
+  "db/migrations/005_pengingat_jatuh_tempo.sql",
+  "db/migrations/006_pengajuan.sql",
+  "db/migrations/007_nopol.sql",
+  "db/migrations/_replika_002_ops_kolom.sql",
+];
 const berkas = hanyaTr
   ? migrasiTr
   : ["db/migrations/_replika_000.sql", "db/migrations/_replika_001.sql", ...migrasiTr];

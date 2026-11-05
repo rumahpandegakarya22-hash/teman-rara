@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import { dokumenInternalValid } from "@/lib/dokumen";
 import { getAccessToken } from "@/lib/google";
+import { getSesiPenghuni } from "@/lib/tenant";
 
 export const dynamic = "force-dynamic";
 
@@ -35,8 +35,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ nam
     return NextResponse.json({ error: "Dokumen tidak dikenal." }, { status: 404 });
   }
 
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "Belum masuk." }, { status: 401 });
+  // Dokumen internal hanya untuk penghuni aktif, bukan sekadar akun Clerk
+  // (pendaftaran Clerk terbuka untuk umum).
+  const sesi = await getSesiPenghuni();
+  if (sesi.status === "tamu") return NextResponse.json({ error: "Belum masuk." }, { status: 401 });
+  if (sesi.status !== "aktif") return NextResponse.json({ error: "Tidak diizinkan." }, { status: 403 });
 
   const folderId = process.env.DRIVE_FOLDER_DOKUMEN_INTERNAL;
   if (!folderId) {

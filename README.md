@@ -9,11 +9,8 @@ Berbagi satu database Turso dengan aplikasi operasional di `D:\kost-tiga-dara`.
 Aplikasi ini **tidak boleh mengubah struktur tabel existing**. Semua tabel baru
 berawalan `tr_` dan menempel ke tabel existing lewat foreign key.
 
-Hak tulis Teman Rara ke tabel existing hanya dua:
-
-- `INSERT` ke `tenant_complain` (pengaduan dari penghuni)
-- `UPDATE` pada `active_tenant.email` dan `active_tenant.no_hp` (edit kontak)
-
+Hak tulis Teman Rara ke tabel existing dirinci di [docs/ARSITEKTUR.md](docs/ARSITEKTUR.md)
+(pengaduan, saran/kritik, pendaftaran booking `Pending`, dan kontak `active_tenant`).
 Selain itu baca saja. Sumber kebenaran skema ada di `kost-tiga-dara/db/schema/`.
 
 ## Menjalankan lokal
@@ -32,10 +29,10 @@ npm run dev
 `db:replika` menjalankan snapshot skema existing lalu migrasi `003_teman_rara.sql`.
 Keduanya menolak jalan kalau `DATABASE_URL` menunjuk ke Turso.
 
-Uji integrasi lapisan data:
+Pengujian otomatis:
 
 ```bash
-node --env-file=.env scripts/smoke-integrasi.mjs
+npm run typecheck && npm run lint && npm test
 ```
 
 ## Peta data
@@ -65,13 +62,14 @@ sehingga tautan akun dan riwayat pengaduan akan ikut yatim.
 
 ## Siapa boleh punya akun
 
-Hanya penghuni yang sedang tinggal. Pendaftar membuktikan diri dengan kombinasi
-nomor kamar dan nomor HP yang cocok dengan `active_tenant`. Karena trigger
+Hanya penghuni yang sedang tinggal. Pendaftar membuktikan diri dengan nomor kamar
+dan nomor HP yang cocok dengan `active_tenant`, serta email akun yang sudah
+diverifikasi Clerk sama dengan email penghuni (lihat [docs/ARSITEKTUR.md](docs/ARSITEKTUR.md)). Karena trigger
 menghapus baris itu saat check-out, mantan penghuni otomatis tidak bisa mendaftar,
 dan penghuni yang check-out kehilangan akses tanpa perlu langkah manual.
 
 Pesan gagal sengaja disamakan untuk semua sebab, supaya tidak bisa dipakai
-menebak kamar mana yang terisi. Percobaan dibatasi 5 kali per 15 menit per akun.
+menebak kamar mana yang terisi. Percobaan dibatasi 5 kali per 15 menit per akun dan 20 kali per jam per IP.
 
 ## Komunikasi dua arah
 

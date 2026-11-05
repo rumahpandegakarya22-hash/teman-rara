@@ -16,5 +16,7 @@
   // Variabel non-rahasia diinjeksi saat deploy (lihat .github/workflows/deploy.yml,
   // sumbernya GitHub Variables). Jangan taruh nilai di file ini: repo bisa publik.
   // keep_vars mencegah deploy lokal menghapus variabel yang sudah terpasang.
-  "keep_vars": true
+  "keep_vars": true,
+  // Workers Logs: console.error dari server action dan cron bisa dicari di dashboard.
+  "observability": { "enabled": true }
 }

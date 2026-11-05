@@ -10,7 +10,9 @@ import { StaggerContainer, StaggerItem } from "@/components/ui/stagger";
 import WifiCard from "@/components/wifi-card";
 import { formatRupiah, formatTanggal } from "@/lib/format";
 import { wajibMasuk } from "@/lib/guard";
-import { getRiwayatBukti, getSesiPenghuni, getTagihanTerbaru } from "@/lib/tenant";
+import { PINDAH_KAMAR_AKTIF } from "@/lib/pengajuan";
+import { getRiwayatBukti, getSesiPenghuni, getTagihanTerbaru, getTunggakanLama } from "@/lib/tenant";
+import { hariIniWIB, selisihHari } from "@/lib/waktu";
 
 export const dynamic = "force-dynamic";
 
@@ -22,15 +24,16 @@ export default async function KamarPage() {
   if (sesi.status !== "aktif") return <SewaBerakhir />;
   const { penghuni } = sesi;
 
-  const tagihan = await getTagihanTerbaru(penghuni.id_penghuni);
-  const riwayat = await getRiwayatBukti(penghuni.id_penghuni);
+  const [tagihan, tunggakanLama, riwayat] = await Promise.all([
+    getTagihanTerbaru(penghuni.id_penghuni),
+    getTunggakanLama(penghuni.id_penghuni),
+    getRiwayatBukti(penghuni.id_penghuni),
+  ]);
 
   // Tagihan hanya ditampilkan kalau belum lunas DAN jatuh tempo tinggal
   // <= 7 hari (termasuk yang sudah lewat).
   const HARI_TAMPIL = 7;
-  const sisaHari = tagihan?.periode_akhir
-    ? Math.ceil((new Date(tagihan.periode_akhir).getTime() - Date.now()) / 86_400_000)
-    : null;
+  const sisaHari = tagihan?.periode_akhir ? selisihHari(hariIniWIB(), tagihan.periode_akhir) : null;
   const tampilkanTagihan =
     tagihan != null && tagihan.status !== "lunas" && sisaHari != null && sisaHari <= HARI_TAMPIL;
   const fasilitas = (penghuni.fasilitas ?? "")
@@ -104,6 +107,25 @@ export default async function KamarPage() {
         </StaggerItem>
       )}
 
+      {tunggakanLama.length > 0 && (
+        <StaggerItem>
+          <section role="alert" className="rounded-lg border border-line bg-raised p-5 elev-1">
+            <h2 className="t-h3 mb-2 text-danger">Tagihan sebelumnya belum lunas</h2>
+            <ul className="flex flex-col gap-1">
+              {tunggakanLama.map((t) => (
+                <li key={t.id} className="t-body-sm flex justify-between gap-3">
+                  <span>
+                    {t.no_inv} · jatuh tempo {formatTanggal(t.periode_akhir)}
+                  </span>
+                  <span className="tabular-nums">{formatRupiah(t.sisa)}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="t-caption mt-2 text-fg-secondary">Hubungi pengelola untuk pelunasan.</p>
+          </section>
+        </StaggerItem>
+      )}
+
       {/* Tagihan baru ditampilkan saat mendekati jatuh tempo (7 hari) atau sudah
           lewat. Di luar itu penghuni tidak perlu diingatkan. */}
       {tampilkanTagihan && tagihan && (
@@ -154,6 +176,7 @@ export default async function KamarPage() {
             </span>
             <ChevronRight size={20} className="icon-flow shrink-0 text-fg-secondary" aria-hidden />
           </Link>
+          {PINDAH_KAMAR_AKTIF && (
           <Link
             href="/pengajuan/pindah"
             className="btn-anim flex min-h-12 items-center gap-3 rounded-lg border border-line bg-raised p-5 elev-1"
@@ -165,6 +188,7 @@ export default async function KamarPage() {
             </span>
             <ChevronRight size={20} className="icon-flow shrink-0 text-fg-secondary" aria-hidden />
           </Link>
+          )}
         </div>
       </section>
       </StaggerItem>

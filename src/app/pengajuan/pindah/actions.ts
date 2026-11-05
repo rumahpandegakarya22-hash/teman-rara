@@ -6,9 +6,10 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { trPindahRequest } from "@/db/schema";
-import { adaPindahMenunggu, getKamarKosong } from "@/lib/pengajuan";
+import { PINDAH_KAMAR_AKTIF, adaPindahMenunggu, getKamarKosong } from "@/lib/pengajuan";
 import { kirimKePengelola } from "@/lib/push";
 import { getPenghuniAktif } from "@/lib/tenant";
+import { hariIniWIB } from "@/lib/waktu";
 
 const schema = z.object({
   tanggal: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Tanggal rencana pindah tidak valid"),
@@ -23,6 +24,7 @@ export async function kirimPengajuanPindah(
   _prev: PengajuanState,
   formData: FormData,
 ): Promise<PengajuanState> {
+  if (!PINDAH_KAMAR_AKTIF) return { error: "Fitur pindah kamar sedang dinonaktifkan." };
   const penghuni = await getPenghuniAktif();
   if (!penghuni) return { error: "Kamu belum terhubung ke kamar mana pun." };
 
@@ -32,7 +34,7 @@ export async function kirimPengajuanPindah(
 
   const kamarLama = String(penghuni.no_kamar);
   if (d.no_kamar_baru === kamarLama) return { error: "Kamar tujuan sama dengan kamar sekarang." };
-  if (d.tanggal < new Date().toISOString().slice(0, 10)) {
+  if (d.tanggal < hariIniWIB()) {
     return { error: "Tanggal rencana pindah tidak boleh sebelum hari ini." };
   }
 

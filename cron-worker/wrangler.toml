@@ -7,6 +7,12 @@ compatibility_date = "2025-01-01"
 # tr_invoice_reminder_sync (lihat src/lib/jobs.ts) supaya tidak kirim dobel.
 # 96 invocation/hari, jauh di bawah limit 5 cron/akun & 100rb request/hari
 # Workers Free plan.
+# Jangan hapus variabel/secret yang dipasang lewat dashboard atau wrangler secret.
+keep_vars = true
+
+[observability]
+enabled = true
+
 [triggers]
 crons = ["*/15 * * * *"]
 

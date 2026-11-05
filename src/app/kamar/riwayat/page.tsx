@@ -6,12 +6,13 @@ import SewaBerakhir from "@/components/sewa-berakhir";
 import { formatRupiah, formatTanggal } from "@/lib/format";
 import { wajibMasuk } from "@/lib/guard";
 import { getRiwayatTagihan, getSesiPenghuni } from "@/lib/tenant";
+import { hariIniWIB } from "@/lib/waktu";
 
 export const dynamic = "force-dynamic";
 
 function statusTagihan(tanggalBayar: string | null, jatuhTempo: string | null) {
   if (tanggalBayar) return { label: "Lunas", icon: CheckCircle2, kelas: "bg-[#E6F0E6] text-success" };
-  const hariIni = new Date().toISOString().slice(0, 10);
+  const hariIni = hariIniWIB();
   if (jatuhTempo && jatuhTempo < hariIni) {
     return { label: "Nunggak", icon: CircleAlert, kelas: "bg-red-100 text-red-600" };
   }

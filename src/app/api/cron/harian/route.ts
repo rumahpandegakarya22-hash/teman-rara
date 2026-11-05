@@ -1,18 +1,20 @@
 import { NextResponse } from "next/server";
+import { cocokSecret } from "@/lib/cron-auth";
+import { cobaPakai } from "@/lib/rate-limit";
+import { kirimTelegram } from "@/lib/telegram";
 import { jalankanPengingatJatuhTempo, sinkronStatusPengaduan } from "@/lib/jobs";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Satu cron harian yang menjalankan semua job terjadwal.
- *
- * Digabung jadi satu karena paket Vercel Hobby hanya mengizinkan cron sekali
- * sehari per proyek. Endpoint ini publik secara jaringan, jadi diamankan
- * dengan CRON_SECRET dan tidak boleh mengandalkan sesi.
+ * Menjalankan semua job terjadwal. Nama path "harian" peninggalan Vercel; kini
+ * dipanggil tiap 15 menit oleh cron-worker, jadi semua job harus idempoten.
+ * Endpoint ini publik secara jaringan, jadi diamankan dengan CRON_SECRET dan
+ * tidak boleh mengandalkan sesi.
  */
 export async function GET(request: Request) {
   const rahasia = process.env.CRON_SECRET;
-  if (!rahasia || request.headers.get("authorization") !== `Bearer ${rahasia}`) {
+  if (!rahasia || !cocokSecret(request.headers.get("authorization"), `Bearer ${rahasia}`)) {
     return NextResponse.json({ error: "Tidak diizinkan" }, { status: 401 });
   }
 
@@ -30,5 +32,15 @@ export async function GET(request: Request) {
   };
 
   const adaGagal = tagihan.status === "rejected" || pengaduan.status === "rejected";
+  if (adaGagal) {
+    // Maksimal satu peringatan per jam supaya cron 15 menit tidak membanjiri chat.
+    const gagal = [tagihan.status === "rejected" && "pengingat jatuh tempo", pengaduan.status === "rejected" && "sinkron pengaduan"]
+      .filter(Boolean)
+      .join(", ");
+    if ((await cobaPakai("alert-cron", 1, 3600)).ok) {
+      await kirimTelegram(`<b>Cron Teman Rara gagal</b>
+Job: ${gagal}. Cek Workers Logs.`);
+    }
+  }
   return NextResponse.json(hasil, { status: adaGagal ? 500 : 200 });
 }
