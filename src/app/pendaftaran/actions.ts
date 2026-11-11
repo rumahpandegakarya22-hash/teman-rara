@@ -145,6 +145,7 @@ const schema = z
     jumlah_gadget: z.coerce.number().int().min(1).max(5),
     barang_elektronik: z.string().trim().min(1, "Barang elektronik wajib diisi (tulis '-' bila tidak ada)").max(500),
     nopol: z.string().trim().min(1, "Nopol wajib diisi (tulis '-' bila tidak membawa kendaraan)").max(20),
+    nama_kendaraan: z.string().trim().max(60).optional().or(z.literal("")),
   })
   .refine((d) => d.pekerjaan !== "Mahasiswi" || (d.program_studi ?? "").trim().length > 1, {
     message: "Program studi wajib diisi untuk mahasiswi",
@@ -245,6 +246,7 @@ export async function kirimPendaftaran(
         jumlah_gadget: d.jumlah_gadget,
         barang_elektronik: d.barang_elektronik || null,
         nopol: d.nopol.toUpperCase(),
+        nama_kendaraan: d.nama_kendaraan || null,
         url_identitas: urlIdentitas,
         url_bukti_dp: urlBuktiDp,
       });

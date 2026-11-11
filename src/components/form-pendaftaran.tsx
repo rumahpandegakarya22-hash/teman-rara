@@ -350,6 +350,13 @@ export default function FormPendaftaran({ tipeKamar }: { tipeKamar: string[] }) 
             placeholder="B 1234 XYZ"
             bantuan="Tulis - bila tidak membawa kendaraan pribadi."
           />
+          <Teks
+            nama="nama_kendaraan"
+            label="Nama kendaraan"
+            maxLength={60}
+            placeholder="Honda Beat Hitam"
+            bantuan="Merek, tipe, dan warna. Kosongkan bila tidak membawa kendaraan."
+          />
         </Seksi>
 
         <div className="flex gap-3">

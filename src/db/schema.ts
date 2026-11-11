@@ -342,6 +342,7 @@ export const trPendaftaran = sqliteTable(
     jumlah_gadget: integer("jumlah_gadget").notNull(),
     barang_elektronik: text("barang_elektronik"),
     nopol: text("nopol"),
+    nama_kendaraan: text("nama_kendaraan"),
     url_identitas: text("url_identitas").notNull(),
     url_bukti_dp: text("url_bukti_dp").notNull(),
     created_at: text("created_at").notNull().default(now),
