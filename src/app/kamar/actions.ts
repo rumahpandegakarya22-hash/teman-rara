@@ -32,11 +32,12 @@ export async function unggahBukti(_prev: UploadState, formData: FormData): Promi
 
   // Pastikan tagihan memang milik penghuni ini. Jangan percaya id dari form.
   const [tagihan] = await db
-    .select({ id: invoiceSewa.id, no_inv: invoiceSewa.no_inv })
+    .select({ id: invoiceSewa.id, no_inv: invoiceSewa.no_inv, void_pada: invoiceSewa.void_pada })
     .from(invoiceSewa)
     .where(and(eq(invoiceSewa.id, invoiceId), eq(invoiceSewa.id_penghuni, penghuni.id_penghuni)))
     .limit(1);
   if (!tagihan) return { error: "Tagihan tidak ditemukan." };
+  if (tagihan.void_pada) return { error: "Tagihan ini sudah dibatalkan pengelola. Gunakan tagihan terbaru." };
 
   try {
     const fileUrl = await simpanGambar(file, "bukti");

@@ -7,3 +7,6 @@ ALTER TABLE tenant_complain ADD COLUMN response_note TEXT;
 ALTER TABLE tenant_complain ADD COLUMN responded_by TEXT;
 ALTER TABLE tenant_complain ADD COLUMN responded_at TEXT;
 ALTER TABLE feedback ADD COLUMN reported_at TEXT;
+-- Void invoice (kost-tiga-dara/db/schema/029): dipetakan di src/db/schema.ts.
+ALTER TABLE invoice_sewa ADD COLUMN void_pada TEXT;
+ALTER TABLE invoice_sewa ADD COLUMN void_alasan TEXT;

@@ -35,6 +35,7 @@ export async function jalankanPengingatJatuhTempo() {
     .from(invoiceSewa)
     .where(
       and(
+        isNull(invoiceSewa.void_pada),
         isNull(invoiceSewa.tanggal_pembayaran),
         gte(invoiceSewa.periode_akhir, batasAwal),
         lte(invoiceSewa.periode_akhir, batasAkhir),

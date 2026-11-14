@@ -86,6 +86,9 @@ export const invoiceSewa = sqliteTable("invoice_sewa", {
   tipe_kamar: text("tipe_kamar"),
   checked: integer("checked").notNull().default(0),
   created_at: text("created_at"),
+  /** Diisi dashboard saat invoice di-void. Invoice void tidak boleh ditagih, diingatkan, atau dibayar. */
+  void_pada: text("void_pada"),
+  void_alasan: text("void_alasan"),
 });
 
 export const invoiceDp = sqliteTable("invoice_dp", {

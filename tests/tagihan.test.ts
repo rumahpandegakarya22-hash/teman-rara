@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { eq } from "drizzle-orm";
 import { buatDbUji } from "./helpers/db-uji";
 import { invoiceSewa, occupancyHistory, payment } from "@/db/schema";
 
@@ -49,6 +50,17 @@ describe("tagihan", () => {
     await bayar("S1", id, 200_000, "Cancelled");
     const t = await tenant.getTagihanTerbaru("S1");
     expect(t).toMatchObject({ status: "sebagian", dibayar: 400_000, sisa: 600_000 });
+  });
+
+  it("invoice void tidak jadi tagihan terbaru maupun tunggakan, tetapi tetap ada di riwayat", async () => {
+    await penghuni("V1");
+    await invoice("V1", { no_inv: "I-V1", periode_akhir: "2026-11-30", grand_total: 1_000_000 });
+    const idLama = await invoice("V1", { no_inv: "I-V0", periode_akhir: "2026-10-31", grand_total: 900_000 });
+    await uji.db.update(invoiceSewa).set({ void_pada: "2026-11-02 10:00", void_alasan: "salah nominal" }).where(eq(invoiceSewa.id, idLama));
+    expect((await tenant.getTagihanTerbaru("V1"))?.no_inv).toBe("I-V1");
+    expect(await tenant.getTunggakanLama("V1")).toEqual([]);
+    const riwayat = await tenant.getRiwayatTagihan("V1");
+    expect(riwayat.find((r) => r.no_inv === "I-V0")?.void_pada).toBeTruthy();
   });
 
   it("nunggak bila lewat jatuh tempo berdasarkan hari WIB", async () => {

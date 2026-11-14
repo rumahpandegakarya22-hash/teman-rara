@@ -124,7 +124,7 @@ export async function getTagihanTerbaru(idPenghuni: string) {
       dibayar: dibayarSql,
     })
     .from(invoiceSewa)
-    .where(eq(invoiceSewa.id_penghuni, idPenghuni))
+    .where(and(eq(invoiceSewa.id_penghuni, idPenghuni), isNull(invoiceSewa.void_pada)))
     .orderBy(desc(invoiceSewa.periode_akhir))
     .limit(1);
 
@@ -163,10 +163,11 @@ export async function getTunggakanLama(idPenghuni: string) {
     .where(
       and(
         eq(invoiceSewa.id_penghuni, idPenghuni),
+        isNull(invoiceSewa.void_pada),
         isNull(invoiceSewa.tanggal_pembayaran),
         lt(invoiceSewa.periode_akhir, hariIniWIB()),
         sql`${invoiceSewa.id} <> (SELECT t.id FROM invoice_sewa t WHERE t.id_penghuni = ${idPenghuni}
-          ORDER BY t.periode_akhir DESC LIMIT 1)`,
+          AND t.void_pada IS NULL ORDER BY t.periode_akhir DESC LIMIT 1)`,
       ),
     )
     .orderBy(desc(invoiceSewa.periode_akhir));
@@ -181,7 +182,7 @@ export async function getTunggakanLama(idPenghuni: string) {
     .filter((r) => r.sisa > 0);
 }
 
-/** Semua tagihan penghuni, terbaru dulu. Dipakai halaman Riwayat Pembayaran. */
+/** Semua tagihan penghuni, terbaru dulu; yang di-void tetap tampil (bertanda Dibatalkan). Dipakai halaman Riwayat Pembayaran. */
 export function getRiwayatTagihan(idPenghuni: string, limit = 50) {
   return db
     .select({
@@ -191,10 +192,12 @@ export function getRiwayatTagihan(idPenghuni: string, limit = 50) {
       periode_akhir: invoiceSewa.periode_akhir,
       grand_total: invoiceSewa.grand_total,
       tanggal_pembayaran: invoiceSewa.tanggal_pembayaran,
+      void_pada: invoiceSewa.void_pada,
+      void_alasan: invoiceSewa.void_alasan,
     })
     .from(invoiceSewa)
     .where(eq(invoiceSewa.id_penghuni, idPenghuni))
-    .orderBy(desc(invoiceSewa.periode_akhir))
+    .orderBy(desc(invoiceSewa.periode_akhir), desc(invoiceSewa.id))
     .limit(limit);
 }
 

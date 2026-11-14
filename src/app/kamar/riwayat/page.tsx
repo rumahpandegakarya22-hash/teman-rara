@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronLeft, CheckCircle2, CircleAlert, CircleDashed, ReceiptText } from "lucide-react";
+import { ChevronLeft, CheckCircle2, CircleAlert, CircleDashed, CircleX, ReceiptText } from "lucide-react";
 import EmptyState from "@/components/empty-state";
 import SewaBerakhir from "@/components/sewa-berakhir";
 import { formatRupiah, formatTanggal } from "@/lib/format";
@@ -10,7 +10,8 @@ import { hariIniWIB } from "@/lib/waktu";
 
 export const dynamic = "force-dynamic";
 
-function statusTagihan(tanggalBayar: string | null, jatuhTempo: string | null) {
+function statusTagihan(tanggalBayar: string | null, jatuhTempo: string | null, dibatalkan: boolean) {
+  if (dibatalkan) return { label: "Dibatalkan", icon: CircleX, kelas: "bg-sunken text-fg-secondary line-through" };
   if (tanggalBayar) return { label: "Lunas", icon: CheckCircle2, kelas: "bg-[#E6F0E6] text-success" };
   const hariIni = hariIniWIB();
   if (jatuhTempo && jatuhTempo < hariIni) {
@@ -53,7 +54,7 @@ export default async function RiwayatPembayaranPage() {
       ) : (
         <ul className="flex flex-col gap-3">
           {daftar.map((t) => {
-            const { label, icon: Icon, kelas } = statusTagihan(t.tanggal_pembayaran, t.periode_akhir);
+            const { label, icon: Icon, kelas } = statusTagihan(t.tanggal_pembayaran, t.periode_akhir, !!t.void_pada);
             return (
               <li key={t.id} className="rounded-lg border border-line bg-raised p-5 elev-1">
                 <div className="flex items-start justify-between gap-3">
@@ -74,7 +75,12 @@ export default async function RiwayatPembayaranPage() {
                     Periode {formatTanggal(t.periode_awal)} sampai {formatTanggal(t.periode_akhir)}
                   </p>
                 )}
-                {t.tanggal_pembayaran && (
+                {t.void_pada && (
+                  <p className="t-caption mt-1 text-fg-secondary">
+                    Dibatalkan pengelola{t.void_alasan ? `: ${t.void_alasan}` : ""}. Abaikan invoice ini.
+                  </p>
+                )}
+                {!t.void_pada && t.tanggal_pembayaran && (
                   <p className="t-caption mt-1 text-success">
                     Dibayar {formatTanggal(t.tanggal_pembayaran)}
                   </p>
