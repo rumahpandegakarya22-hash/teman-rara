@@ -66,7 +66,7 @@ export async function kirimPengajuanCheckout(
 
   try {
     await db.transaction(async (tx) => {
-      const [req] = await tx
+      await tx
         .insert(trCheckoutRequest)
         .values({
           id_penghuni: penghuni.id_penghuni,
@@ -74,14 +74,12 @@ export async function kirimPengajuanCheckout(
           tanggal_checkout: d.tanggal_checkout,
           alasan: d.alasan,
           catatan: d.catatan || null,
-        })
-        .returning({ id: trCheckoutRequest.id });
+        });
       if (survey) {
         const n = (k: string) => Number(survey[k]);
         const t = (k: string) => String(survey[k]);
         await tx.insert(trExitSurvey).values({
-          id_penghuni: penghuni.id_penghuni,
-          checkout_request_id: req.id,
+          periode: hariIniWIB().slice(0, 7),
           rating_kebersihan_umum: n("rating_kebersihan_umum"),
           rating_furniture: n("rating_furniture"),
           rating_air: n("rating_air"),

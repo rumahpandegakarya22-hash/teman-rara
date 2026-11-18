@@ -52,7 +52,11 @@ export default function ExitSurveyFields() {
         <h2 className="t-h3">
           Exit survey <span className="t-body-sm text-fg-secondary">(opsional)</span>
         </h2>
-        <p className="t-body-sm mt-1 text-fg-secondary">
+        <p className="mt-2 rounded-md border border-line bg-raised p-3 t-body-sm">
+          <strong>Survei ini anonim.</strong> Jawabanmu disimpan tanpa nama, nomor kamar, akun, maupun
+          kaitan dengan pengajuan checkout ini.
+        </p>
+        <p className="t-body-sm mt-2 text-fg-secondary">
           Mohon isi dengan jujur. Kalau diisi, lengkapi semua pertanyaan; tulis &quot;-&quot; bila tidak ada masukan.
         </p>
         <p className="t-caption mt-1 text-fg-secondary">Skala: {SKALA}</p>

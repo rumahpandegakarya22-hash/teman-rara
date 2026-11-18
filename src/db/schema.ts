@@ -462,16 +462,12 @@ export const trKontrakPersetujuan = sqliteTable("tr_kontrak_persetujuan", {
   ip: text("ip"),
 });
 
+/** ANONIM: sengaja tanpa kolom yang bisa dilacak ke penghuni (lihat migrasi 012). */
 export const trExitSurvey = sqliteTable(
   "tr_exit_survey",
   {
     id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-    id_penghuni: text("id_penghuni")
-      .notNull()
-      .references(() => occupancyHistory.id_penghuni),
-    checkout_request_id: text("checkout_request_id")
-      .notNull()
-      .references(() => trCheckoutRequest.id),
+    periode: text("periode").notNull(),
     rating_kebersihan_umum: integer("rating_kebersihan_umum").notNull(),
     rating_furniture: integer("rating_furniture").notNull(),
     rating_air: integer("rating_air").notNull(),
@@ -489,9 +485,7 @@ export const trExitSurvey = sqliteTable(
     rekomendasi: integer("rekomendasi", { mode: "boolean" }).notNull(),
     disukai: text("disukai").notNull(),
     tidak_disukai: text("tidak_disukai").notNull(),
-    created_at: text("created_at").notNull().default(now),
   },
-  (t) => [index("idx_tr_exit_survey_req").on(t.checkout_request_id)],
 );
 
 export const trFeedbackRutin = sqliteTable(

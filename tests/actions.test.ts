@@ -357,8 +357,9 @@ describe("exit survey di pengajuan checkout", () => {
 
     await jalankan(() => kirimPengajuanCheckout({}, form(lengkap)));
     const [sv] = await uji.db.select().from(trExitSurvey);
+    expect(Object.keys(sv).some((k) => /penghuni|checkout|nama|kamar/i.test(k))).toBe(false);
     expect(sv).toMatchObject({
-      id_penghuni: "S1",
+      periode: expect.stringMatching(/^\d{4}-\d{2}$/),
       rating_wifi: 2,
       puas: true,
       rekomendasi: false,

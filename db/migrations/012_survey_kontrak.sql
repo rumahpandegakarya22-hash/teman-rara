@@ -16,10 +16,11 @@ CREATE TABLE IF NOT EXISTS tr_kontrak_persetujuan (
 );
 
 -- Mengikuti kuesioner Google Form "Exit Survey Kost" (rating 1-5, teks wajib, "-" bila kosong).
+-- ANONIM: sengaja tanpa id_penghuni / checkout_request_id / timestamp presisi.
+-- Jangan tambahkan kolom yang bisa dilacak ke penghuni.
 CREATE TABLE IF NOT EXISTS tr_exit_survey (
   id                    TEXT PRIMARY KEY,
-  id_penghuni           TEXT NOT NULL REFERENCES occupancy_history(id_penghuni),
-  checkout_request_id   TEXT NOT NULL REFERENCES tr_checkout_request(id),
+  periode               TEXT NOT NULL,            -- 'YYYY-MM' saja
 
   rating_kebersihan_umum INTEGER NOT NULL CHECK (rating_kebersihan_umum BETWEEN 1 AND 5),
   rating_furniture       INTEGER NOT NULL CHECK (rating_furniture BETWEEN 1 AND 5),
@@ -39,11 +40,8 @@ CREATE TABLE IF NOT EXISTS tr_exit_survey (
   puas                   INTEGER NOT NULL CHECK (puas IN (0, 1)),
   rekomendasi            INTEGER NOT NULL CHECK (rekomendasi IN (0, 1)),
   disukai                TEXT NOT NULL,
-  tidak_disukai          TEXT NOT NULL,
-
-  created_at             TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  tidak_disukai          TEXT NOT NULL
 );
-CREATE UNIQUE INDEX IF NOT EXISTS idx_tr_exit_survey_req ON tr_exit_survey (checkout_request_id);
 
 CREATE TABLE IF NOT EXISTS tr_feedback_rutin (
   id_penghuni TEXT NOT NULL REFERENCES occupancy_history(id_penghuni),
