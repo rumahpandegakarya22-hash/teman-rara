@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
-import { trCheckoutRequest } from "@/db/schema";
+import { trCheckoutRequest, trExitSurvey } from "@/db/schema";
 import { adaCheckoutMenunggu } from "@/lib/pengajuan";
 import { kirimKePengelola } from "@/lib/push";
 import { getPenghuniAktif } from "@/lib/tenant";
@@ -15,6 +15,18 @@ const schema = z.object({
   tanggal_checkout: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Tanggal rencana keluar tidak valid"),
   alasan: z.string().trim().min(3, "Alasan wajib diisi").max(500),
   catatan: z.string().trim().max(500).optional().or(z.literal("")),
+});
+
+const rating = z.coerce.number().int().min(1).max(5);
+const BIDANG_RATING = ["rating_kebersihan", "rating_fasilitas", "rating_pelayanan", "rating_harga"] as const;
+
+const surveySchema = z.object({
+  rating_kebersihan: rating,
+  rating_fasilitas: rating,
+  rating_pelayanan: rating,
+  rating_harga: rating,
+  rekomendasi: z.enum(["0", "1"], { message: "Pilih apakah kamu akan merekomendasikan kost ini" }),
+  saran: z.string().trim().max(500).optional().or(z.literal("")),
 });
 
 export type PengajuanState = { error?: string };
@@ -40,13 +52,41 @@ export async function kirimPengajuanCheckout(
     return { error: "Kamu masih punya pengajuan checkout yang sedang diproses pengelola." };
   }
 
+  // Survey opsional: kalau tidak ada satu pun rating yang diisi, dilewati.
+  // Kalau sebagian diisi, semuanya harus lengkap supaya data bisa dibandingkan.
+  const isiSurvey = BIDANG_RATING.some((k) => formData.get(k)) || formData.get("rekomendasi");
+  let survey: z.infer<typeof surveySchema> | null = null;
+  if (isiSurvey) {
+    const hasil = surveySchema.safeParse(Object.fromEntries(formData));
+    if (!hasil.success) return { error: "Lengkapi semua nilai exit survey, atau kosongkan seluruhnya." };
+    survey = hasil.data;
+  }
+
   try {
-    await db.insert(trCheckoutRequest).values({
-      id_penghuni: penghuni.id_penghuni,
-      no_kamar: String(penghuni.no_kamar),
-      tanggal_checkout: d.tanggal_checkout,
-      alasan: d.alasan,
-      catatan: d.catatan || null,
+    await db.transaction(async (tx) => {
+      const [req] = await tx
+        .insert(trCheckoutRequest)
+        .values({
+          id_penghuni: penghuni.id_penghuni,
+          no_kamar: String(penghuni.no_kamar),
+          tanggal_checkout: d.tanggal_checkout,
+          alasan: d.alasan,
+          catatan: d.catatan || null,
+        })
+        .returning({ id: trCheckoutRequest.id });
+      if (survey) {
+        await tx.insert(trExitSurvey).values({
+          id_penghuni: penghuni.id_penghuni,
+          checkout_request_id: req.id,
+          rating_kebersihan: survey.rating_kebersihan,
+          rating_fasilitas: survey.rating_fasilitas,
+          rating_pelayanan: survey.rating_pelayanan,
+          rating_harga: survey.rating_harga,
+          rekomendasi: survey.rekomendasi === "1",
+          alasan_utama: d.alasan,
+          saran: survey.saran || null,
+        });
+      }
     });
   } catch (e) {
     console.error("[pengajuan-checkout] gagal:", e);

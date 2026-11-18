@@ -444,3 +444,56 @@ export const trRateLimit = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.kunci, t.jendela] })],
 );
+
+/** Config global milik Ops (key/value). Teman Rara hanya membaca, mis. `kontrak_enabled`. */
+export const appConfig = sqliteTable("app_config", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull().default(""),
+  updated_by: text("updated_by"),
+  updated_at: text("updated_at"),
+});
+
+export const trKontrakPersetujuan = sqliteTable("tr_kontrak_persetujuan", {
+  no_booking: text("no_booking")
+    .primaryKey()
+    .references(() => booking.no_booking),
+  versi: text("versi").notNull(),
+  disetujui_at: text("disetujui_at").notNull().default(now),
+  ip: text("ip"),
+});
+
+export const trExitSurvey = sqliteTable(
+  "tr_exit_survey",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id_penghuni: text("id_penghuni")
+      .notNull()
+      .references(() => occupancyHistory.id_penghuni),
+    checkout_request_id: text("checkout_request_id")
+      .notNull()
+      .references(() => trCheckoutRequest.id),
+    rating_kebersihan: integer("rating_kebersihan").notNull(),
+    rating_fasilitas: integer("rating_fasilitas").notNull(),
+    rating_pelayanan: integer("rating_pelayanan").notNull(),
+    rating_harga: integer("rating_harga").notNull(),
+    rekomendasi: integer("rekomendasi", { mode: "boolean" }).notNull(),
+    alasan_utama: text("alasan_utama"),
+    saran: text("saran"),
+    created_at: text("created_at").notNull().default(now),
+  },
+  (t) => [index("idx_tr_exit_survey_req").on(t.checkout_request_id)],
+);
+
+export const trFeedbackRutin = sqliteTable(
+  "tr_feedback_rutin",
+  {
+    id_penghuni: text("id_penghuni")
+      .notNull()
+      .references(() => occupancyHistory.id_penghuni),
+    periode: text("periode").notNull(),
+    rating: integer("rating").notNull(),
+    komentar: text("komentar"),
+    created_at: text("created_at").notNull().default(now),
+  },
+  (t) => [primaryKey({ columns: [t.id_penghuni, t.periode] })],
+);

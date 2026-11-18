@@ -12,12 +12,12 @@ import { ProgressIndicator } from "@/components/ui/progress-indicator";
 
 const LANGKAH = ["Ketersediaan", "Biodata", "Dokumen"];
 
-function SubmitButton() {
+function SubmitButton({ terkunci }: { terkunci?: boolean }) {
   const { pending } = useFormStatus();
   return (
     <FlowButton
       type="submit"
-      disabled={pending}
+      disabled={pending || terkunci}
       className="btn-anim min-h-12 w-full rounded-md bg-action px-6 t-label text-on-action active:bg-action-pressed disabled:bg-sunken disabled:text-fg-disabled"
     >
       {pending ? "Mengirim…" : "Kirim Pendaftaran"}
@@ -91,7 +91,7 @@ function TombolLangkah({
   );
 }
 
-export default function FormPendaftaran({ tipeKamar }: { tipeKamar: string[] }) {
+export default function FormPendaftaran({ tipeKamar, kontrak }: { tipeKamar: string[]; kontrak: boolean }) {
   const [state, action] = useActionState<PendaftaranState, FormData>(kirimPendaftaran, {});
   const formRef = useRef<HTMLFormElement>(null);
   const biodataRef = useRef<HTMLDivElement>(null);
@@ -99,6 +99,7 @@ export default function FormPendaftaran({ tipeKamar }: { tipeKamar: string[] }) 
   // Dulu uncontrolled (`defaultValue="1"`); OriginSelect controlled, jadi
   // nilainya dipegang state dengan default yang sama.
   const [jumlahGadget, setJumlahGadget] = useState("1");
+  const [setujuKontrak, setSetujuKontrak] = useState(false);
 
   // Langkah 0 — Ketersediaan: tanggal + tipe kamar dulu, baru kamar spesifik.
   const [langkah, setLangkah] = useState(0);
@@ -405,6 +406,37 @@ export default function FormPendaftaran({ tipeKamar }: { tipeKamar: string[] }) 
           </div>
         </Seksi>
 
+        {kontrak && (
+          <Seksi judul="Kontrak Sewa">
+            <p className="t-body-sm text-fg-secondary">
+              Baca kontrak berikut. Tanda tangan basah dilakukan setelah pengelola memverifikasi pendaftaranmu.
+            </p>
+            <iframe
+              src="/api/kontrak"
+              title="Kontrak sewa"
+              className="h-96 w-full rounded-md border border-line bg-raised"
+            />
+            <a
+              href="/api/kontrak"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-anim t-label inline-flex min-h-12 items-center text-action underline"
+            >
+              Buka kontrak di tab baru
+            </a>
+            <label className="flex min-h-12 items-start gap-3 t-body-sm">
+              <input
+                type="checkbox"
+                name="setuju_kontrak"
+                checked={setujuKontrak}
+                onChange={(e) => setSetujuKontrak(e.target.checked)}
+                className="mt-1 size-5 shrink-0"
+              />
+              Saya sudah membaca dan menyetujui isi kontrak sewa ini.
+            </label>
+          </Seksi>
+        )}
+
         <div className="flex gap-3">
           <button
             type="button"
@@ -414,7 +446,7 @@ export default function FormPendaftaran({ tipeKamar }: { tipeKamar: string[] }) 
             Kembali
           </button>
           <div className="flex-[2]">
-            <SubmitButton />
+            <SubmitButton terkunci={kontrak && !setujuKontrak} />
           </div>
         </div>
       </div>

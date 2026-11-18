@@ -50,6 +50,8 @@ const migrasiTr = [
   "db/migrations/005_pengingat_jatuh_tempo.sql",
   "db/migrations/006_pengajuan.sql",
   "db/migrations/007_nopol.sql",
+  "db/migrations/008_nama_kendaraan.sql",
+  "db/migrations/012_survey_kontrak.sql",
   "db/migrations/_replika_002_ops_kolom.sql",
 ];
 const berkas = hanyaTr

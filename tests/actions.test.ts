@@ -3,13 +3,18 @@ import { eq } from "drizzle-orm";
 import { buatDbUji } from "./helpers/db-uji";
 import {
   activeTenant,
+  appConfig,
   booking,
   invoiceSewa,
   kamar,
   occupancyHistory,
   tenantComplain,
   trComplainPhoto,
+  trCheckoutRequest,
   trComplainSync,
+  trExitSurvey,
+  trFeedbackRutin,
+  trKontrakPersetujuan,
   trPaymentProof,
   trPendaftaran,
 } from "@/db/schema";
@@ -185,6 +190,7 @@ describe("pendaftaran publik", () => {
       jumlah_gadget: "2",
       barang_elektronik: "Laptop",
       nopol: "d 1234 ab",
+      nama_kendaraan: "Honda Beat",
     };
     for (const [k, val] of Object.entries(v)) f.set(k, val);
     f.set("scan_identitas", foto("ktp.png"));
@@ -203,12 +209,34 @@ describe("pendaftaran publik", () => {
     expect(b.status_booking).toBe("Pending");
     const [p] = await uji.db.select().from(trPendaftaran).where(eq(trPendaftaran.no_booking, no));
     expect(p.nopol).toBe("D 1234 AB");
+    expect(p.nama_kendaraan).toBe("Honda Beat");
     expect(p.no_hp).toBe("6281234567890");
     expect(telegram.mock.calls.at(-1)?.[0]).toContain("Pendaftaran baru");
     expect(telegram.mock.calls.at(-1)?.[0]).toContain(no);
 
     const ulang = (await kirimPendaftaran({}, isi(31))) as { error?: string };
     expect(ulang.error).toMatch(/tidak tersedia/);
+  });
+
+  it("kontrak aktif: menolak tanpa persetujuan, mencatat versi + IP bila disetujui; mati = tidak diminta", async () => {
+    const { kirimPendaftaran } = await import("@/app/pendaftaran/actions");
+    await uji.db.insert(kamar).values({ id_kamar: "K32", no_kamar: 32, tipe_kamar: "Standard" });
+    await uji.db.insert(appConfig).values({ key: "kontrak_enabled", value: "1" });
+    ip = "7.7.7.7";
+    const tanpa = (await kirimPendaftaran({}, isi(32))) as { error?: string };
+    expect(tanpa.error).toMatch(/menyetujui kontrak/);
+
+    const f = isi(32);
+    f.set("setuju_kontrak", "on");
+    const hasil = (await jalankan(() => kirimPendaftaran({}, f))) as { redirect: string };
+    const no = decodeURIComponent(hasil.redirect.split("no=")[1]);
+    const [k] = await uji.db.select().from(trKontrakPersetujuan).where(eq(trKontrakPersetujuan.no_booking, no));
+    expect(k).toMatchObject({ versi: "v1", ip: "7.7.7.7" });
+
+    await uji.db.update(appConfig).set({ value: "0" }).where(eq(appConfig.key, "kontrak_enabled"));
+    await uji.db.insert(kamar).values({ id_kamar: "K33", no_kamar: 33, tipe_kamar: "Standard" });
+    const mati = (await jalankan(() => kirimPendaftaran({}, isi(33)))) as { redirect: string };
+    expect(mati.redirect).toMatch(/terkirim/);
   });
 
   it("kiriman ke-4 dari IP yang sama dalam sejam ditolak rate limit", async () => {
@@ -286,5 +314,62 @@ describe("pindah kamar dinonaktifkan", () => {
     const r = await kirimPengajuanPindah({}, new FormData());
     expect(r.error).toMatch(/dinonaktifkan/);
     expect(telegram).not.toHaveBeenCalled();
+  });
+});
+
+describe("exit survey di pengajuan checkout", () => {
+  const form = (extra: Record<string, string> = {}) => {
+    const f = new FormData();
+    f.set("tanggal_checkout", "2099-01-01");
+    f.set("alasan", "Lulus kuliah");
+    for (const [k, v] of Object.entries(extra)) f.set(k, v);
+    return f;
+  };
+  const lengkap = {
+    rating_kebersihan: "5",
+    rating_fasilitas: "4",
+    rating_pelayanan: "5",
+    rating_harga: "3",
+    rekomendasi: "1",
+    saran: "Tambah jemuran",
+  };
+
+  it("survey opsional: tanpa isian tetap terkirim; lengkap tersimpan; sebagian ditolak", async () => {
+    const { kirimPengajuanCheckout } = await import("@/app/pengajuan/checkout/actions");
+    await penghuni("S1", 41);
+    await jalankan(() => kirimPengajuanCheckout({}, form()));
+    expect(await uji.db.select().from(trExitSurvey)).toHaveLength(0);
+    await uji.db.update(trCheckoutRequest).set({ status: "Dibatalkan" });
+
+    const sebagian = (await kirimPengajuanCheckout({}, form({ rating_harga: "3" }))) as { error?: string };
+    expect(sebagian.error).toMatch(/Lengkapi/);
+
+    await jalankan(() => kirimPengajuanCheckout({}, form(lengkap)));
+    const [sv] = await uji.db.select().from(trExitSurvey);
+    expect(sv).toMatchObject({ id_penghuni: "S1", rating_harga: 3, rekomendasi: true, alasan_utama: "Lulus kuliah" });
+  });
+
+  it("menolak rating di luar 1-5", async () => {
+    const { kirimPengajuanCheckout } = await import("@/app/pengajuan/checkout/actions");
+    await penghuni("S2", 42);
+    const r = (await kirimPengajuanCheckout({}, form({ ...lengkap, rating_harga: "9" }))) as { error?: string };
+    expect(r.error).toMatch(/Lengkapi/);
+  });
+});
+
+describe("feedback rutin", () => {
+  it("satu per bulan per penghuni, rating 1-5", async () => {
+    const { kirimFeedbackRutin } = await import("@/app/feedback/actions");
+    await penghuni("F1", 51);
+    const f = (rating: string) => {
+      const d = new FormData();
+      d.set("rating", rating);
+      d.set("komentar", "Oke");
+      return d;
+    };
+    expect(((await kirimFeedbackRutin({}, f("0"))) as { error?: string }).error).toBeTruthy();
+    expect(await kirimFeedbackRutin({}, f("4"))).toEqual({ sukses: true });
+    expect(((await kirimFeedbackRutin({}, f("5"))) as { error?: string }).error).toMatch(/sudah mengisi/);
+    expect(await uji.db.select().from(trFeedbackRutin)).toHaveLength(1);
   });
 });

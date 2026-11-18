@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { asc, eq, like, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
-import { activeTenant, booking, kamar, trPendaftaran } from "@/db/schema";
+import { activeTenant, booking, kamar, trKontrakPersetujuan, trPendaftaran } from "@/db/schema";
+import { KONTRAK_VERSI, kontrakAktif } from "@/lib/kontrak";
 import { normalisasi62 } from "@/lib/phone";
 import { simpanGambar, validasiBerkas } from "@/lib/storage";
 import { hariIniWIB, tambahHari } from "@/lib/waktu";
@@ -180,6 +181,12 @@ export async function kirimPendaftaran(
   }
   const d = parsed.data;
 
+  // Saklar dicek ulang di server; checkbox di klien hanya kenyamanan.
+  const wajibKontrak = await kontrakAktif();
+  if (wajibKontrak && formData.get("setuju_kontrak") !== "on") {
+    return { error: "Kamu perlu menyetujui kontrak sewa sebelum mengirim pendaftaran." };
+  }
+
   const identitas = formData.get("scan_identitas");
   const buktiDp = formData.get("scan_bukti_dp");
   if (!(identitas instanceof File) || !(buktiDp instanceof File)) {
@@ -250,6 +257,10 @@ export async function kirimPendaftaran(
         url_identitas: urlIdentitas,
         url_bukti_dp: urlBuktiDp,
       });
+
+      if (wajibKontrak) {
+        await tx.insert(trKontrakPersetujuan).values({ no_booking: noBooking, versi: KONTRAK_VERSI, ip });
+      }
     });
   } catch (e) {
     // Dulu error asli ditelan diam-diam sehingga penyebab (mis. token Google

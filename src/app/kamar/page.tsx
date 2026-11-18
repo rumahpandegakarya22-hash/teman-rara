@@ -3,11 +3,13 @@ import { redirect } from "next/navigation";
 import { ArrowLeftRight, BedDouble, ChevronRight, LogOut, ReceiptText, Sofa } from "lucide-react";
 import DetailTagihan from "@/components/detail-tagihan";
 import KalkulatorSewa from "@/components/kalkulator-sewa";
+import KartuFeedbackRutin from "@/components/kartu-feedback-rutin";
 import RiwayatPembayaranSoon from "@/components/riwayat-pembayaran-soon";
 import SewaBerakhir from "@/components/sewa-berakhir";
 import UploadBukti from "@/components/upload-bukti";
 import { StaggerContainer, StaggerItem } from "@/components/ui/stagger";
 import WifiCard from "@/components/wifi-card";
+import { sudahIsiFeedbackBulanIni } from "@/lib/feedback-rutin";
 import { formatRupiah, formatTanggal } from "@/lib/format";
 import { wajibMasuk } from "@/lib/guard";
 import { PINDAH_KAMAR_AKTIF } from "@/lib/pengajuan";
@@ -24,10 +26,11 @@ export default async function KamarPage() {
   if (sesi.status !== "aktif") return <SewaBerakhir />;
   const { penghuni } = sesi;
 
-  const [tagihan, tunggakanLama, riwayat] = await Promise.all([
+  const [tagihan, tunggakanLama, riwayat, sudahFeedback] = await Promise.all([
     getTagihanTerbaru(penghuni.id_penghuni),
     getTunggakanLama(penghuni.id_penghuni),
     getRiwayatBukti(penghuni.id_penghuni),
+    sudahIsiFeedbackBulanIni(penghuni.id_penghuni),
   ]);
 
   // Tagihan hanya ditampilkan kalau belum lunas DAN jatuh tempo tinggal
@@ -100,6 +103,12 @@ export default async function KamarPage() {
         )}
       </section>
       </StaggerItem>
+
+      {!sudahFeedback && (
+        <StaggerItem>
+          <KartuFeedbackRutin />
+        </StaggerItem>
+      )}
 
       {penghuni.wifi_ssid && penghuni.wifi_password && (
         <StaggerItem>

@@ -3,6 +3,7 @@ import { ChevronLeft, DoorClosed } from "lucide-react";
 import EmptyState from "@/components/empty-state";
 import FormPendaftaran from "@/components/form-pendaftaran";
 import GerbangPendaftaran from "@/components/gerbang-pendaftaran";
+import { kontrakAktif } from "@/lib/kontrak";
 import { getTipeKamarTersedia } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function PendaftaranPage() {
   // Tipe kamar yang ada di database — ketersediaan per tanggal dicek belakangan
   // (langkah 1 form), jadi di sini cukup daftar tipenya saja.
-  const tipeKamar = await getTipeKamarTersedia();
+  const [tipeKamar, kontrak] = await Promise.all([getTipeKamarTersedia(), kontrakAktif()]);
 
   return (
     <main className="px-4 pt-4">
@@ -40,7 +41,7 @@ export default async function PendaftaranPage() {
         />
       ) : (
         <GerbangPendaftaran>
-          <FormPendaftaran tipeKamar={tipeKamar} />
+          <FormPendaftaran tipeKamar={tipeKamar} kontrak={kontrak} />
         </GerbangPendaftaran>
       )}
     </main>
