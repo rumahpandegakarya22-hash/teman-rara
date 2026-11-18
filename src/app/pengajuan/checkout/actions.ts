@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { trCheckoutRequest, trExitSurvey } from "@/db/schema";
+import { NAMA_RATING, NAMA_TEKS, NAMA_YA_TIDAK } from "@/lib/exit-survey";
 import { adaCheckoutMenunggu } from "@/lib/pengajuan";
 import { kirimKePengelola } from "@/lib/push";
 import { getPenghuniAktif } from "@/lib/tenant";
@@ -18,15 +19,14 @@ const schema = z.object({
 });
 
 const rating = z.coerce.number().int().min(1).max(5);
-const BIDANG_RATING = ["rating_kebersihan", "rating_fasilitas", "rating_pelayanan", "rating_harga"] as const;
+const yaTidak = z.enum(["0", "1"]);
+// Teks wajib diisi; penghuni menulis "-" bila tidak ada masukan (sama seperti Google Form).
+const teks = z.string().trim().min(1).max(1000);
 
 const surveySchema = z.object({
-  rating_kebersihan: rating,
-  rating_fasilitas: rating,
-  rating_pelayanan: rating,
-  rating_harga: rating,
-  rekomendasi: z.enum(["0", "1"], { message: "Pilih apakah kamu akan merekomendasikan kost ini" }),
-  saran: z.string().trim().max(500).optional().or(z.literal("")),
+  ...Object.fromEntries(NAMA_RATING.map((k) => [k, rating])),
+  ...Object.fromEntries(NAMA_YA_TIDAK.map((k) => [k, yaTidak])),
+  ...Object.fromEntries(NAMA_TEKS.map((k) => [k, teks])),
 });
 
 export type PengajuanState = { error?: string };
@@ -54,12 +54,14 @@ export async function kirimPengajuanCheckout(
 
   // Survey opsional: kalau tidak ada satu pun rating yang diisi, dilewati.
   // Kalau sebagian diisi, semuanya harus lengkap supaya data bisa dibandingkan.
-  const isiSurvey = BIDANG_RATING.some((k) => formData.get(k)) || formData.get("rekomendasi");
-  let survey: z.infer<typeof surveySchema> | null = null;
+  const isiSurvey = [...NAMA_RATING, ...NAMA_YA_TIDAK, ...NAMA_TEKS].some(
+    (k) => String(formData.get(k) ?? "").trim() !== "",
+  );
+  let survey: Record<string, unknown> | null = null;
   if (isiSurvey) {
     const hasil = surveySchema.safeParse(Object.fromEntries(formData));
-    if (!hasil.success) return { error: "Lengkapi semua nilai exit survey, atau kosongkan seluruhnya." };
-    survey = hasil.data;
+    if (!hasil.success) return { error: "Lengkapi semua pertanyaan exit survey (tulis \"-\" bila tidak ada masukan), atau kosongkan seluruhnya." };
+    survey = hasil.data as Record<string, unknown>;
   }
 
   try {
@@ -75,16 +77,28 @@ export async function kirimPengajuanCheckout(
         })
         .returning({ id: trCheckoutRequest.id });
       if (survey) {
+        const n = (k: string) => Number(survey[k]);
+        const t = (k: string) => String(survey[k]);
         await tx.insert(trExitSurvey).values({
           id_penghuni: penghuni.id_penghuni,
           checkout_request_id: req.id,
-          rating_kebersihan: survey.rating_kebersihan,
-          rating_fasilitas: survey.rating_fasilitas,
-          rating_pelayanan: survey.rating_pelayanan,
-          rating_harga: survey.rating_harga,
-          rekomendasi: survey.rekomendasi === "1",
-          alasan_utama: d.alasan,
-          saran: survey.saran || null,
+          rating_kebersihan_umum: n("rating_kebersihan_umum"),
+          rating_furniture: n("rating_furniture"),
+          rating_air: n("rating_air"),
+          rating_wifi: n("rating_wifi"),
+          rating_keamanan: n("rating_keamanan"),
+          rating_bangunan: n("rating_bangunan"),
+          masukan_fasilitas: t("masukan_fasilitas"),
+          rating_keramahan: n("rating_keramahan"),
+          rating_respon: n("rating_respon"),
+          rating_aturan_jelas: n("rating_aturan_jelas"),
+          rating_aturan_relevan: n("rating_aturan_relevan"),
+          rating_pembayaran: n("rating_pembayaran"),
+          masukan_pengelola: t("masukan_pengelola"),
+          puas: t("puas") === "1",
+          rekomendasi: t("rekomendasi") === "1",
+          disukai: t("disukai"),
+          tidak_disukai: t("tidak_disukai"),
         });
       }
     });

@@ -325,13 +325,24 @@ describe("exit survey di pengajuan checkout", () => {
     for (const [k, v] of Object.entries(extra)) f.set(k, v);
     return f;
   };
-  const lengkap = {
-    rating_kebersihan: "5",
-    rating_fasilitas: "4",
-    rating_pelayanan: "5",
-    rating_harga: "3",
-    rekomendasi: "1",
-    saran: "Tambah jemuran",
+  const lengkap: Record<string, string> = {
+    rating_kebersihan_umum: "5",
+    rating_furniture: "4",
+    rating_air: "5",
+    rating_wifi: "2",
+    rating_keamanan: "5",
+    rating_bangunan: "4",
+    masukan_fasilitas: "-",
+    rating_keramahan: "5",
+    rating_respon: "4",
+    rating_aturan_jelas: "5",
+    rating_aturan_relevan: "3",
+    rating_pembayaran: "5",
+    masukan_pengelola: "Tambah jemuran",
+    puas: "1",
+    rekomendasi: "0",
+    disukai: "Lokasi",
+    tidak_disukai: "WiFi lambat",
   };
 
   it("survey opsional: tanpa isian tetap terkirim; lengkap tersimpan; sebagian ditolak", async () => {
@@ -341,18 +352,24 @@ describe("exit survey di pengajuan checkout", () => {
     expect(await uji.db.select().from(trExitSurvey)).toHaveLength(0);
     await uji.db.update(trCheckoutRequest).set({ status: "Dibatalkan" });
 
-    const sebagian = (await kirimPengajuanCheckout({}, form({ rating_harga: "3" }))) as { error?: string };
+    const sebagian = (await kirimPengajuanCheckout({}, form({ rating_wifi: "3" }))) as { error?: string };
     expect(sebagian.error).toMatch(/Lengkapi/);
 
     await jalankan(() => kirimPengajuanCheckout({}, form(lengkap)));
     const [sv] = await uji.db.select().from(trExitSurvey);
-    expect(sv).toMatchObject({ id_penghuni: "S1", rating_harga: 3, rekomendasi: true, alasan_utama: "Lulus kuliah" });
+    expect(sv).toMatchObject({
+      id_penghuni: "S1",
+      rating_wifi: 2,
+      puas: true,
+      rekomendasi: false,
+      tidak_disukai: "WiFi lambat",
+    });
   });
 
   it("menolak rating di luar 1-5", async () => {
     const { kirimPengajuanCheckout } = await import("@/app/pengajuan/checkout/actions");
     await penghuni("S2", 42);
-    const r = (await kirimPengajuanCheckout({}, form({ ...lengkap, rating_harga: "9" }))) as { error?: string };
+    const r = (await kirimPengajuanCheckout({}, form({ ...lengkap, rating_wifi: "9" }))) as { error?: string };
     expect(r.error).toMatch(/Lengkapi/);
   });
 });
